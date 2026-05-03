@@ -36,3 +36,31 @@ export async function addGearItem(item: GearItem): Promise<void> {
   const existing = await loadGearItems(item.userId);
   await saveGearItems([item, ...existing], item.userId);
 }
+
+export async function findGearItemById(id: string, userId?: string): Promise<GearItem | undefined> {
+  const existing = await loadGearItems(userId);
+  return existing.find((item) => item.id === id);
+}
+
+export async function updateGearItem(item: GearItem): Promise<boolean> {
+  const existing = await loadGearItems(item.userId);
+  const itemIndex = existing.findIndex((entry) => entry.id === item.id);
+
+  if (itemIndex === -1) return false;
+
+  const nextItems = [...existing];
+  nextItems[itemIndex] = item;
+
+  await saveGearItems(nextItems, item.userId);
+  return true;
+}
+
+export async function deleteGearItem(id: string, userId?: string): Promise<boolean> {
+  const existing = await loadGearItems(userId);
+  const nextItems = existing.filter((item) => item.id !== id);
+
+  if (nextItems.length === existing.length) return false;
+
+  await saveGearItems(nextItems, userId);
+  return true;
+}

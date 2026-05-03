@@ -94,7 +94,14 @@ export default function GearListScreen() {
                 {item.photoUri ? (
                   <Image source={{ uri: item.photoUri }} style={styles.cardImage} contentFit="cover" />
                 ) : null}
-                <ThemedText type="subtitle">{item.name}</ThemedText>
+                <ThemedView style={styles.cardHeader}>
+                  <ThemedText type="subtitle">{item.name}</ThemedText>
+                  <Pressable
+                    style={styles.editButton}
+                    onPress={() => router.push({ pathname: '/add-gear', params: { id: item.id } })}>
+                    <ThemedText type="defaultSemiBold">Edit</ThemedText>
+                  </Pressable>
+                </ThemedView>
                 <ThemedText>Category: {GEAR_CATEGORY_LABELS[item.category]}</ThemedText>
                 <ThemedText>Purchase Date: {item.purchaseDate}</ThemedText>
                 <ThemedText>
@@ -164,6 +171,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     gap: 4,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+    gap: 8,
+  },
+  editButton: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#8f8f8f66',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   cardImage: {
     width: '100%',
