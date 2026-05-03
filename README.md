@@ -16,6 +16,15 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+3. Configure Supabase env
+
+   Create local `.env` and set your project values:
+
+   ```bash
+   EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+   EXPO_PUBLIC_SUPABASE_KEY=YOUR_KEY
+   ```
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
