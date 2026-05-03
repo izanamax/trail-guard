@@ -72,7 +72,24 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="add-gear" options={{ title: 'Add Gear', headerBackTitle: 'Back' }} />
+        <Stack.Screen
+          name="add-gear"
+          options={{
+            title: 'Add Gear',
+            headerBackTitle: 'Back',
+            headerTransparent: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
+          }}
+        />
+        <Stack.Screen
+          name="gear/[id]"
+          options={{
+            title: 'Gear Details',
+            headerBackTitle: 'Back',
+            headerTransparent: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
+          }}
+        />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />

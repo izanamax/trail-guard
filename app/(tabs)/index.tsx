@@ -1,12 +1,13 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { supabase } from '@/lib/supabase';
 import { loadGearItems } from '@/storage/gear-storage';
 import type { GearItem, GearStatus } from '@/types/gear';
@@ -30,13 +31,17 @@ function getStatusStyle(status: GearStatus) {
 
 export default function GearListScreen() {
   const router = useRouter();
+  const backgroundColor = useThemeColor({}, 'background');
+  const hasLoadedOnceRef = useRef(false);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const loadItems = useCallback(async () => {
+  const loadItems = useCallback(async (showLoader: boolean) => {
     setError('');
-    setIsLoading(true);
+    if (showLoader) {
+      setIsLoading(true);
+    }
 
     try {
       const { data } = await supabase.auth.getUser();
@@ -45,18 +50,21 @@ export default function GearListScreen() {
     } catch {
       setError('Failed to load gear items.');
     } finally {
-      setIsLoading(false);
+      if (showLoader) {
+        setIsLoading(false);
+      }
+      hasLoadedOnceRef.current = true;
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      loadItems();
+      void loadItems(!hasLoadedOnceRef.current);
     }, [loadItems])
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={['top', 'bottom']}>
       <ThemedView style={styles.container}>
         <ThemedView style={styles.header}>
           <ThemedText type="title">Gear List</ThemedText>
@@ -78,7 +86,10 @@ export default function GearListScreen() {
 
         {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
 
-        <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}>
           {!isLoading && gearItems.length === 0 ? (
             <ThemedView style={styles.emptyState}>
               <ThemedText>No gear yet. Add your first item.</ThemedText>
@@ -90,29 +101,30 @@ export default function GearListScreen() {
             const daysRemaining = Math.max(0, result.daysRemaining);
 
             return (
-              <ThemedView key={item.id} style={styles.card}>
-                {item.photoUri ? (
-                  <Image source={{ uri: item.photoUri }} style={styles.cardImage} contentFit="cover" />
-                ) : null}
-                <ThemedView style={styles.cardHeader}>
-                  <ThemedText type="subtitle">{item.name}</ThemedText>
-                  <Pressable
-                    style={styles.editButton}
-                    onPress={() => router.push({ pathname: '/add-gear', params: { id: item.id } })}>
-                    <ThemedText type="defaultSemiBold">Edit</ThemedText>
-                  </Pressable>
+              <Pressable
+                key={item.id}
+                onPress={() => router.push({ pathname: '/gear/[id]', params: { id: item.id } })}
+                style={({ pressed }) => [styles.gridItem, pressed && styles.cardPressed]}>
+                <ThemedView style={styles.card}>
+                  {item.photoUri ? (
+                    <Image source={{ uri: item.photoUri }} style={styles.cardImage} contentFit="cover" />
+                  ) : (
+                    <ThemedView style={styles.cardImagePlaceholder}>
+                      <ThemedText style={styles.cardImagePlaceholderText}>No photo</ThemedText>
+                    </ThemedView>
+                  )}
+                  <ThemedText type="subtitle" numberOfLines={1}>
+                    {item.name}
+                  </ThemedText>
+                  <ThemedText style={styles.metaText} numberOfLines={1}>
+                    {GEAR_CATEGORY_LABELS[item.category]}
+                  </ThemedText>
+                  <ThemedText style={styles.metaText}>Days left: {daysRemaining}</ThemedText>
+                  <ThemedText style={[styles.statusBadge, getStatusStyle(result.status)]}>
+                    {result.status}
+                  </ThemedText>
                 </ThemedView>
-                <ThemedText>Category: {GEAR_CATEGORY_LABELS[item.category]}</ThemedText>
-                <ThemedText>Purchase Date: {item.purchaseDate}</ThemedText>
-                <ThemedText>
-                  Manufacture Date: {item.manufactureDate || `${item.purchaseDate} (from purchase)`}
-                </ThemedText>
-                <ThemedText>Lifespan Used: {result.percentageUsed}%</ThemedText>
-                <ThemedText>Days Remaining: {daysRemaining}</ThemedText>
-                <ThemedText style={[styles.statusBadge, getStatusStyle(result.status)]}>
-                  Status: {result.status}
-                </ThemedText>
-              </ThemedView>
+              </Pressable>
             );
           })}
         </ScrollView>
@@ -147,6 +159,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     opacity: 0.8,
+    backgroundColor: 'red',
+    borderRadius: 8,
+    padding: 10,
   },
   loadingBlock: {
     paddingVertical: 12,
@@ -155,50 +170,68 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#d64545',
   },
+  list: {
+    flex: 1,
+  },
   listContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    flexGrow: 1,
     paddingBottom: 24,
     gap: 12,
   },
   emptyState: {
+    width: '100%',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#8f8f8f66',
     borderRadius: 12,
     padding: 14,
+  },
+  gridItem: {
+    width: '48%',
   },
   card: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#8f8f8f66',
     borderRadius: 12,
-    padding: 14,
-    gap: 4,
+    padding: 10,
+    gap: 6,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 2,
-    gap: 8,
-  },
-  editButton: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8f8f8f66',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  cardPressed: {
+    opacity: 0.75,
   },
   cardImage: {
     width: '100%',
-    height: 140,
+    height: 96,
     borderRadius: 10,
-    marginBottom: 6,
+  },
+  cardImagePlaceholder: {
+    width: '100%',
+    height: 96,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#8f8f8f66',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardImagePlaceholderText: {
+    opacity: 0.7,
+    fontSize: 12,
+  },
+  metaText: {
+    fontSize: 13,
+    opacity: 0.85,
   },
   statusBadge: {
-    marginTop: 8,
+    marginTop: 2,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     overflow: 'hidden',
     fontWeight: '600',
+    fontSize: 12,
+    textAlign: 'center',
   },
   statusSafe: {
     color: '#1c7c41',

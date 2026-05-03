@@ -1,3 +1,4 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Icon, Label, NativeTabs, VectorIcon } from 'expo-router/unstable-native-tabs';
 import React from 'react';
@@ -12,7 +13,7 @@ export default function TabLayout() {
     <NativeTabs tintColor={Colors[colorScheme ?? 'light'].tint}>
       <NativeTabs.Trigger name="index">
         <Label>Gear</Label>
-        <Icon src={<VectorIcon family={MaterialIcons} name="home" />} />
+        <Icon src={<VectorIcon family={FontAwesome} name="gear" />} />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="explore">

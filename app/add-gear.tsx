@@ -20,7 +20,6 @@ import { ThemedView } from '@/components/themed-view';
 import { supabase } from '@/lib/supabase';
 import {
   addGearItem,
-  deleteGearItem,
   findGearItemById,
   updateGearItem,
 } from '@/storage/gear-storage';
@@ -304,54 +303,13 @@ export default function AddGearScreen() {
     }
   };
 
-  const executeDelete = async () => {
-    if (!existingItem) return;
-
-    setIsSaving(true);
-    setError('');
-
-    try {
-      const { data } = await supabase.auth.getUser();
-      const currentUserId = data.user?.id ?? existingItem.userId;
-      const deleted = await deleteGearItem(existingItem.id, currentUserId);
-
-      if (!deleted) {
-        setError('Failed to delete gear item.');
-        return;
-      }
-
-      router.back();
-    } catch {
-      setError('Failed to delete gear item.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = () => {
-    if (!existingItem || isSaving) return;
-
-    Alert.alert('Delete gear item', 'This action cannot be undone.', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          void executeDelete();
-        },
-      },
-    ]);
-  };
-
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ThemedView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <ThemedText type="title">{isEditMode ? 'Edit Gear' : 'Add Gear'}</ThemedText>
-
+        <ScrollView
+          contentContainerStyle={styles.content}
+          contentInsetAdjustmentBehavior="never"
+          showsVerticalScrollIndicator={false}>
           {isLoadingGear ? (
             <ThemedView style={styles.loadingBlock}>
               <ActivityIndicator size="small" />
@@ -445,20 +403,6 @@ export default function AddGearScreen() {
                 {isSaving ? 'Saving...' : isEditMode ? 'Save Changes' : 'Save Gear'}
               </ThemedText>
             </Pressable>
-
-            {isEditMode ? (
-              <Pressable
-                onPress={handleDelete}
-                disabled={isSaving || isLoadingGear || !existingItem}
-                style={[
-                  styles.deleteButton,
-                  (isSaving || isLoadingGear || !existingItem) && styles.saveButtonDisabled,
-                ]}>
-                <ThemedText type="defaultSemiBold" style={styles.deleteButtonText}>
-                  Delete Gear
-                </ThemedText>
-              </Pressable>
-            ) : null}
           </ThemedView>
         </ScrollView>
       </ThemedView>
@@ -562,16 +506,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-  },
-  deleteButton: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#cc5555',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  deleteButtonText: {
-    color: '#b42318',
   },
   saveButtonDisabled: {
     opacity: 0.6,
