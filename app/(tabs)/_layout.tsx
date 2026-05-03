@@ -11,7 +11,7 @@ export default function TabLayout() {
   return (
     <NativeTabs tintColor={Colors[colorScheme ?? 'light'].tint}>
       <NativeTabs.Trigger name="index">
-        <Label>Home</Label>
+        <Label>Gear</Label>
         <Icon src={<VectorIcon family={MaterialIcons} name="home" />} />
       </NativeTabs.Trigger>
 

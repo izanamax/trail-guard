@@ -1,98 +1,198 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import { loadGearItems } from '@/storage/gear-storage';
+import type { GearItem, GearStatus } from '@/types/gear';
+import { GEAR_CATEGORY_LABELS } from '@/types/gear';
+import { calculateGearStatus } from '@/utils/gear-status';
 
-export default function HomeScreen() {
+function getStatusStyle(status: GearStatus) {
+  switch (status) {
+    case 'Safe':
+      return styles.statusSafe;
+    case 'Warning':
+      return styles.statusWarning;
+    case 'Retire Soon':
+      return styles.statusRetireSoon;
+    case 'Expired':
+      return styles.statusExpired;
+    default:
+      return styles.statusSafe;
+  }
+}
+
+export default function GearListScreen() {
+  const router = useRouter();
+  const [gearItems, setGearItems] = useState<GearItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadItems = useCallback(async () => {
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const { data } = await supabase.auth.getUser();
+      const items = await loadGearItems(data.user?.id);
+      setGearItems(items);
+    } catch {
+      setError('Failed to load gear items.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadItems();
+    }, [loadItems])
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <ThemedView style={styles.container}>
+        <ThemedView style={styles.header}>
+          <ThemedText type="title">Gear List</ThemedText>
+          <Pressable style={styles.addButton} onPress={() => router.push('/add-gear')}>
+            <ThemedText type="defaultSemiBold">Add Gear</ThemedText>
+          </Pressable>
+        </ThemedView>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
+        <ThemedText style={styles.disclaimer}>
+          The calculated status is only a reminder. Always inspect gear manually and follow
+          manufacturer instructions.
         </ThemedText>
+
+        {isLoading ? (
+          <ThemedView style={styles.loadingBlock}>
+            <ActivityIndicator size="small" />
+          </ThemedView>
+        ) : null}
+
+        {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
+
+        <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+          {!isLoading && gearItems.length === 0 ? (
+            <ThemedView style={styles.emptyState}>
+              <ThemedText>No gear yet. Add your first item.</ThemedText>
+            </ThemedView>
+          ) : null}
+
+          {gearItems.map((item) => {
+            const result = calculateGearStatus(item);
+            const daysRemaining = Math.max(0, result.daysRemaining);
+
+            return (
+              <ThemedView key={item.id} style={styles.card}>
+                {item.photoUri ? (
+                  <Image source={{ uri: item.photoUri }} style={styles.cardImage} contentFit="cover" />
+                ) : null}
+                <ThemedText type="subtitle">{item.name}</ThemedText>
+                <ThemedText>Category: {GEAR_CATEGORY_LABELS[item.category]}</ThemedText>
+                <ThemedText>Purchase Date: {item.purchaseDate}</ThemedText>
+                <ThemedText>
+                  Manufacture Date: {item.manufactureDate || `${item.purchaseDate} (from purchase)`}
+                </ThemedText>
+                <ThemedText>Lifespan Used: {result.percentageUsed}%</ThemedText>
+                <ThemedText>Days Remaining: {daysRemaining}</ThemedText>
+                <ThemedText style={[styles.statusBadge, getStatusStyle(result.status)]}>
+                  Status: {result.status}
+                </ThemedText>
+              </ThemedView>
+            );
+          })}
+        </ScrollView>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 12,
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  addButton: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#8f8f8f66',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  disclaimer: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.8,
+  },
+  loadingBlock: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#d64545',
+  },
+  listContent: {
+    paddingBottom: 24,
+    gap: 12,
+  },
+  emptyState: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#8f8f8f66',
+    borderRadius: 12,
+    padding: 14,
+  },
+  card: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#8f8f8f66',
+    borderRadius: 12,
+    padding: 14,
+    gap: 4,
+  },
+  cardImage: {
+    width: '100%',
+    height: 140,
+    borderRadius: 10,
+    marginBottom: 6,
+  },
+  statusBadge: {
+    marginTop: 8,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    overflow: 'hidden',
+    fontWeight: '600',
+  },
+  statusSafe: {
+    color: '#1c7c41',
+    backgroundColor: '#e9f8ef',
+  },
+  statusWarning: {
+    color: '#8a5a00',
+    backgroundColor: '#fff4d9',
+  },
+  statusRetireSoon: {
+    color: '#a15a00',
+    backgroundColor: '#ffe9d4',
+  },
+  statusExpired: {
+    color: '#b42318',
+    backgroundColor: '#ffe2e0',
   },
 });
