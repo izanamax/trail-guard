@@ -9,13 +9,31 @@ import { supabase } from '@/lib/supabase';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const [userName, setUserName] = useState('Trail Guard User');
   const [userEmail, setUserEmail] = useState('maxim.mussin@trailguard.app');
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
+      const metadataName =
+        typeof data.user?.user_metadata?.name === 'string'
+          ? data.user.user_metadata.name.trim()
+          : typeof data.user?.user_metadata?.full_name === 'string'
+          ? data.user.user_metadata.full_name.trim()
+          : '';
+
+      if (metadataName) {
+        setUserName(metadataName);
+      }
+
       if (data.user?.email) {
         setUserEmail(data.user.email);
+        if (!metadataName) {
+          const fallbackName = data.user.email.split('@')[0]?.trim();
+          if (fallbackName) {
+            setUserName(fallbackName);
+          }
+        }
       }
     });
   }, []);
@@ -44,7 +62,7 @@ export default function ProfileScreen() {
             contentFit="cover"
           />
           <ThemedText type="title" style={styles.centerText}>
-            Maxim Mussin
+            {userName}
           </ThemedText>
           <ThemedText style={styles.centerText}>{userEmail}</ThemedText>
         </ThemedView>

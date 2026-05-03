@@ -17,13 +17,19 @@ export default function LoginScreen() {
     setError('');
     setIsLoading(true);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    if (signInError) {
-      setError(signInError.message);
+      if (signInError) {
+        setError(signInError.message);
+      }
+    } catch {
+      setError(
+        'Network request failed. Check internet on device, Supabase URL, and restart Expo after .env changes.'
+      );
     }
 
     setIsLoading(false);

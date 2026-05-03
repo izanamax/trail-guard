@@ -8,6 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { supabase } from '@/lib/supabase';
 
 export default function RegisterScreen() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,19 +20,30 @@ export default function RegisterScreen() {
     setMessage('');
     setIsLoading(true);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            name: name.trim(),
+          },
+        },
+      });
 
-    if (signUpError) {
-      setError(signUpError.message);
-      setIsLoading(false);
-      return;
-    }
+      if (signUpError) {
+        setError(signUpError.message);
+        setIsLoading(false);
+        return;
+      }
 
-    if (!data.session) {
-      setMessage('Account created. Check your email to confirm registration, then login.');
+      if (!data.session) {
+        setMessage('Account created. Check your email to confirm registration, then login.');
+      }
+    } catch {
+      setError(
+        'Network request failed. Check internet on device, Supabase URL, and restart Expo after .env changes.'
+      );
     }
 
     setIsLoading(false);
@@ -44,6 +56,15 @@ export default function RegisterScreen() {
         <ThemedText style={styles.subtitle}>Register with email and password.</ThemedText>
 
         <ThemedView style={styles.form}>
+          <TextInput
+            autoCapitalize="words"
+            autoCorrect={false}
+            placeholder="Name"
+            placeholderTextColor="#9a9a9a"
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+          />
           <TextInput
             autoCapitalize="none"
             autoCorrect={false}
