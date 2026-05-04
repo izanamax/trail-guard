@@ -21,7 +21,9 @@ export async function loadGearItems(userId?: string): Promise<GearItem[]> {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed as GearItem[];
+    return (parsed as GearItem[]).filter(
+      (item) => typeof item?.id === 'string' && typeof item?.category === 'string'
+    );
   } catch {
     return [];
   }
