@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 import type { Session } from '@supabase/supabase-js';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { cacheProfileFromUser, clearCachedProfile } from '@/lib/profile-cache';
 import { supabase } from '@/lib/supabase';
 
 export const unstable_settings = {
@@ -23,16 +24,33 @@ export default function RootLayout() {
   useEffect(() => {
     let isMounted = true;
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!isMounted) return;
       setSession(data.session);
-      setIsLoading(false);
+
+      try {
+        if (data.session?.user) {
+          await cacheProfileFromUser(data.session.user);
+        } else {
+          await clearCachedProfile();
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
+
+      if (nextSession?.user) {
+        void cacheProfileFromUser(nextSession.user);
+      } else {
+        void clearCachedProfile();
+      }
     });
 
     return () => {
@@ -85,6 +103,24 @@ export default function RootLayout() {
           name="gear/[id]"
           options={{
             title: 'Gear Details',
+            headerBackTitle: 'Back',
+            headerTransparent: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
+          }}
+        />
+        <Stack.Screen
+          name="settings"
+          options={{
+            title: 'Settings',
+            headerBackTitle: 'Back',
+            headerTransparent: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
+          }}
+        />
+        <Stack.Screen
+          name="security"
+          options={{
+            title: 'Security',
             headerBackTitle: 'Back',
             headerTransparent: false,
             headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },

@@ -24,6 +24,8 @@ function getStatusStyle(status: GearStatus) {
       return styles.statusRetireSoon;
     case 'Expired':
       return styles.statusExpired;
+    case 'Manually Retired':
+      return styles.statusManuallyRetired;
     default:
       return styles.statusSafe;
   }
@@ -99,6 +101,7 @@ export default function GearListScreen() {
           {gearItems.map((item) => {
             const result = calculateGearStatus(item);
             const daysRemaining = Math.max(0, result.daysRemaining);
+            const isManuallyRetired = result.status === 'Manually Retired';
 
             return (
               <Pressable
@@ -119,7 +122,13 @@ export default function GearListScreen() {
                   <ThemedText style={styles.metaText} numberOfLines={1}>
                     {GEAR_CATEGORY_LABELS[item.category]}
                   </ThemedText>
-                  <ThemedText style={styles.metaText}>Days left: {daysRemaining}</ThemedText>
+                  {isManuallyRetired ? (
+                    <ThemedText style={styles.metaText}>
+                      Retired manually{item.retiredAt ? ` on ${item.retiredAt.slice(0, 10)}` : ''}
+                    </ThemedText>
+                  ) : (
+                    <ThemedText style={styles.metaText}>Days left: {daysRemaining}</ThemedText>
+                  )}
                   <ThemedText style={[styles.statusBadge, getStatusStyle(result.status)]}>
                     {result.status}
                   </ThemedText>
@@ -159,7 +168,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     opacity: 0.8,
-    backgroundColor: '#fff8e1',
+    color: '#7a271a',
+    backgroundColor: '#ffe2e0',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#cc5555',
     borderRadius: 8,
     padding: 10,
   },
@@ -248,5 +260,9 @@ const styles = StyleSheet.create({
   statusExpired: {
     color: '#b42318',
     backgroundColor: '#ffe2e0',
+  },
+  statusManuallyRetired: {
+    color: '#475467',
+    backgroundColor: '#f2f4f7',
   },
 });

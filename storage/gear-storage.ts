@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { GearItem } from '@/types/gear';
 
 const LOCAL_GEAR_STORAGE_KEY = 'gear_items_local';
+const LEGACY_GEAR_STORAGE_KEYS = ['gear_items'];
 
 function resolveStorageKey(userId?: string): string {
   if (userId) {
@@ -65,4 +66,24 @@ export async function deleteGearItem(id: string, userId?: string): Promise<boole
 
   await saveGearItems(nextItems, userId);
   return true;
+}
+
+export async function clearUserLocalData(userId?: string): Promise<void> {
+  const keysToDelete = new Set<string>([LOCAL_GEAR_STORAGE_KEY, ...LEGACY_GEAR_STORAGE_KEYS]);
+
+  if (userId) {
+    keysToDelete.add(resolveStorageKey(userId));
+  }
+
+  try {
+    const allKeys = await AsyncStorage.getAllKeys();
+    for (const key of allKeys) {
+      if (!key.startsWith('gear_items_')) continue;
+      keysToDelete.add(key);
+    }
+  } catch {
+    // Ignore key enumeration failures and clear known keys only.
+  }
+
+  await AsyncStorage.multiRemove(Array.from(keysToDelete));
 }
