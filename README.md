@@ -1,59 +1,93 @@
-# Welcome to your Expo app 👋
+# Trail Guard MVP
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Trail Guard is a product-thinking MVP for hikers and climbers who need a simple way to track gear lifecycle safety.
 
-## Get started
+Core hypothesis: if users can quickly add gear and immediately see lifecycle status, they will use the app to reduce the risk of outdated equipment.
 
-1. Install dependencies
+## MVP Scope
 
-   ```bash
-   npm install
-   ```
+### Included
+- Auth (register/login via Supabase).
+- End-to-end workflow: `Add Gear -> Status Calculation -> Gear List/Details`.
+- Category-based retirement calculation (rope/harness/helmet/boots).
+- Status outputs: `Safe`, `Warning`, `Retire Soon`, `Expired`, `Manually Retired`.
+- Manual retirement controls (`Retire Now`, `Undo Retirement`).
+- Optional gear photo (secondary UX helper, not core hypothesis).
+- Account erasure flow: `Delete Account & All Data`.
 
-2. Start the app
+### Not Included
+- GPS tracking, GPX import/export, maps, elevation charts, weather.
+- Social sharing/discovery features.
+- Professional certification logic.
 
-   ```bash
-   npx expo start
-   ```
+## Setup
 
-3. Configure Supabase env
-
-   Create local `.env` and set your project values:
-
-   ```bash
-   EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
-   EXPO_PUBLIC_SUPABASE_KEY=YOUR_KEY
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+1. Install dependencies:
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Create `.env` in the project root:
 
-## Learn more
+```bash
+EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+EXPO_PUBLIC_SUPABASE_KEY=YOUR_ANON_KEY
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+3. Start app:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npx expo start
+```
 
-## Join the community
+## Supabase Function: delete-account
 
-Join our community of developers creating universal apps.
+This repository includes `supabase/functions/delete-account/index.ts`.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Purpose:
+- Validate user token.
+- Delete user rows from `sync_queue` and `gear_items`.
+- Delete user files from Storage bucket (default `gear-photos`, configurable by `GEAR_PHOTO_BUCKET`).
+- Delete auth user via admin API.
+
+Deploy example:
+
+```bash
+supabase functions deploy delete-account
+```
+
+Required server secrets:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- Optional: `GEAR_PHOTO_BUCKET`
+
+## Ethics and Privacy
+
+- App shows explicit disclaimer: always inspect gear manually and follow manufacturer instructions.
+- Manual retirement is supported even before calculated expiration.
+- Category rules are estimates and intentionally documented as non-certification logic.
+- Gear data is private by default.
+- Full erasure flow is implemented in Profile via `Delete Account & All Data`.
+
+## Assignment Alignment
+
+- Falsifiable MVP workflow implemented end-to-end (real input, processing, output).
+- UI includes domain-relevant safety guidance instead of template content.
+- Data changes based on user input and persists locally by user key.
+- Ethical risks addressed in product behavior:
+  - false sense of safety -> disclaimer + manual retirement.
+  - model limitations -> explicit safety limits screen.
+- Privacy by Design:
+  - data minimization in MVP fields,
+  - private-by-default posture,
+  - account/data erasure flow.
+
+## Quality Check
+
+Run lint:
+
+```bash
+npm run lint
+```

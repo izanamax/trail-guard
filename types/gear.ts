@@ -1,6 +1,6 @@
 export type GearCategory = 'dynamic_rope' | 'harness' | 'helmet' | 'boots';
 
-export type GearStatus = 'Safe' | 'Warning' | 'Retire Soon' | 'Expired';
+export type GearStatus = 'Safe' | 'Warning' | 'Retire Soon' | 'Expired' | 'Manually Retired';
 
 export interface GearItem {
   id: string;
@@ -10,6 +10,8 @@ export interface GearItem {
   purchaseDate: string;
   manufactureDate: string;
   photoUri?: string;
+  retiredAt?: string;
+  retirementNote?: string;
   createdAt: string;
 }
 

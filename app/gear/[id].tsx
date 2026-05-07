@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { supabase } from '@/lib/supabase';
-import { deleteGearItem, findGearItemById } from '@/storage/gear-storage';
+import { deleteGearItem, findGearItemById, updateGearItem } from '@/storage/gear-storage';
 import { GEAR_CATEGORY_LABELS, type GearItem, type GearStatus } from '@/types/gear';
 import { calculateGearStatus } from '@/utils/gear-status';
 
@@ -23,6 +23,8 @@ function getStatusStyle(status: GearStatus) {
       return styles.statusRetireSoon;
     case 'Expired':
       return styles.statusExpired;
+    case 'Manually Retired':
+      return styles.statusManuallyRetired;
     default:
       return styles.statusSafe;
   }
@@ -40,6 +42,7 @@ export default function GearDetailsScreen() {
   const [gearItem, setGearItem] = useState<GearItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingRetirement, setIsUpdatingRetirement] = useState(false);
   const [error, setError] = useState('');
 
   const loadGearItem = useCallback(async () => {
@@ -79,7 +82,7 @@ export default function GearDetailsScreen() {
   );
 
   const executeDelete = async () => {
-    if (!gearItem || isDeleting) return;
+    if (!gearItem || isDeleting || isUpdatingRetirement) return;
 
     setIsDeleting(true);
     setError('');
@@ -103,7 +106,7 @@ export default function GearDetailsScreen() {
   };
 
   const handleDelete = () => {
-    if (!gearItem || isDeleting) return;
+    if (!gearItem || isDeleting || isUpdatingRetirement) return;
 
     Alert.alert('Delete gear item', 'This action cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
@@ -117,8 +120,75 @@ export default function GearDetailsScreen() {
     ]);
   };
 
+  const setRetirementState = async (retire: boolean) => {
+    if (!gearItem || isDeleting || isUpdatingRetirement) return;
+
+    setIsUpdatingRetirement(true);
+    setError('');
+
+    try {
+      const nextItem: GearItem = retire
+        ? {
+            ...gearItem,
+            retiredAt: new Date().toISOString(),
+            retirementNote: 'Manually retired by user.',
+          }
+        : {
+            ...gearItem,
+            retiredAt: undefined,
+            retirementNote: undefined,
+          };
+
+      const updated = await updateGearItem(nextItem);
+      if (!updated) {
+        setError('Failed to update retirement status.');
+        return;
+      }
+
+      setGearItem(nextItem);
+    } catch {
+      setError('Failed to update retirement status.');
+    } finally {
+      setIsUpdatingRetirement(false);
+    }
+  };
+
+  const handleRetireNow = () => {
+    if (!gearItem || isDeleting || isUpdatingRetirement) return;
+
+    Alert.alert(
+      'Retire this gear now?',
+      'Use this if the item is damaged or should no longer be used, even before the calculated date.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Retire now',
+          style: 'destructive',
+          onPress: () => {
+            void setRetirementState(true);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleUndoRetirement = () => {
+    if (!gearItem || isDeleting || isUpdatingRetirement) return;
+
+    Alert.alert('Undo manual retirement?', 'The item will return to calculated lifecycle status.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Undo',
+        onPress: () => {
+          void setRetirementState(false);
+        },
+      },
+    ]);
+  };
+
   const statusResult = gearItem ? calculateGearStatus(gearItem) : null;
   const daysRemaining = statusResult ? Math.max(0, statusResult.daysRemaining) : 0;
+  const isManuallyRetired = statusResult?.status === 'Manually Retired';
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={['bottom']}>
@@ -156,22 +226,48 @@ export default function GearDetailsScreen() {
               <ThemedText>
                 Manufacture Date: {gearItem.manufactureDate || `${gearItem.purchaseDate} (from purchase)`}
               </ThemedText>
+              {isManuallyRetired ? (
+                <ThemedText>Manual Retirement Date: {gearItem.retiredAt?.slice(0, 10) || 'Unknown'}</ThemedText>
+              ) : null}
+              {gearItem.retirementNote ? <ThemedText>Retirement Note: {gearItem.retirementNote}</ThemedText> : null}
               <ThemedText>Lifespan Used: {statusResult.percentageUsed}%</ThemedText>
               <ThemedText>Days Remaining: {daysRemaining}</ThemedText>
               <ThemedText style={[styles.statusBadge, getStatusStyle(statusResult.status)]}>
                 Status: {statusResult.status}
               </ThemedText>
+              <ThemedText style={styles.safetyNote}>
+                Inspect before every use. Follow manufacturer instructions.
+              </ThemedText>
 
               <ThemedView style={styles.actions}>
                 <Pressable
                   style={styles.editButton}
-                  disabled={isDeleting}
+                  disabled={isDeleting || isUpdatingRetirement}
                   onPress={() => router.push({ pathname: '/add-gear', params: { id: gearItem.id } })}>
                   <ThemedText type="defaultSemiBold">Edit Gear</ThemedText>
                 </Pressable>
+                {isManuallyRetired ? (
+                  <Pressable
+                    style={[styles.undoRetireButton, isUpdatingRetirement && styles.buttonDisabled]}
+                    disabled={isDeleting || isUpdatingRetirement}
+                    onPress={handleUndoRetirement}>
+                    <ThemedText type="defaultSemiBold">
+                      {isUpdatingRetirement ? 'Updating...' : 'Undo Retirement'}
+                    </ThemedText>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    style={[styles.retireButton, isUpdatingRetirement && styles.buttonDisabled]}
+                    disabled={isDeleting || isUpdatingRetirement}
+                    onPress={handleRetireNow}>
+                    <ThemedText type="defaultSemiBold" style={styles.retireButtonText}>
+                      {isUpdatingRetirement ? 'Updating...' : 'Retire Now'}
+                    </ThemedText>
+                  </Pressable>
+                )}
                 <Pressable
                   style={[styles.deleteButton, isDeleting && styles.buttonDisabled]}
-                  disabled={isDeleting}
+                  disabled={isDeleting || isUpdatingRetirement}
                   onPress={handleDelete}>
                   <ThemedText type="defaultSemiBold" style={styles.deleteButtonText}>
                     {isDeleting ? 'Deleting...' : 'Delete Gear'}
@@ -241,6 +337,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     fontWeight: '600',
   },
+  safetyNote: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    opacity: 0.82,
+  },
   statusSafe: {
     color: '#1c7c41',
     backgroundColor: '#e9f8ef',
@@ -256,6 +358,10 @@ const styles = StyleSheet.create({
   statusExpired: {
     color: '#b42318',
     backgroundColor: '#ffe2e0',
+  },
+  statusManuallyRetired: {
+    color: '#475467',
+    backgroundColor: '#f2f4f7',
   },
   actions: {
     marginTop: 10,
@@ -277,6 +383,24 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#b42318',
+  },
+  retireButton: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#c67800',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: '#fff4d9',
+  },
+  retireButtonText: {
+    color: '#8a5a00',
+  },
+  undoRetireButton: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#8f8f8f66',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
   },
   buttonDisabled: {
     opacity: 0.6,

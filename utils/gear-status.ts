@@ -20,6 +20,14 @@ function resolveStatus(percentageUsed: number): GearStatus {
 }
 
 export function calculateGearStatus(gearItem: GearItem): GearStatusResult {
+  if (gearItem.retiredAt) {
+    return {
+      percentageUsed: 100,
+      daysRemaining: 0,
+      status: 'Manually Retired',
+    };
+  }
+
   const baselineDate = gearItem.manufactureDate || gearItem.purchaseDate;
   const baseline = parseDateOnly(baselineDate);
   const now = new Date();
