@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { StyleSheet, Alert, Pressable, View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Alert, Pressable, View, Text, ScrollView, ActivityIndicator, TextInput } from 'react-native';
 import MapView, { UrlTile, Polyline, Marker, MapPressEvent } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
@@ -124,6 +124,12 @@ export default function MapScreen() {
 
       <View style={[styles.controlsOverlay, { paddingBottom: 80 }]}>
         <View style={styles.card}>
+          <TextInput
+            style={styles.nameInput}
+            value={routeName}
+            onChangeText={setRouteName}
+            placeholder="Route Name"
+          />
           <ThemedText style={styles.cardTitle}>Active Gear (for next point)</ThemedText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gearScroll}>
             <Pressable
@@ -197,6 +203,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+  },
+  nameInput: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: '#ccc',
+    paddingBottom: 4,
+    color: '#333',
   },
   cardTitle: {
     fontSize: 14,
