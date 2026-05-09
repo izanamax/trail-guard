@@ -180,13 +180,11 @@ export default function MapScreen() {
       </Pressable>
 
       <KeyboardAvoidingView 
-        style={StyleSheet.absoluteFillObject}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.controlsOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         pointerEvents="box-none"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 80}
       >
-        <View style={styles.controlsOverlay} pointerEvents="box-none">
-          <View style={[styles.card, { marginBottom: 100 }]}>
+        <View style={[styles.card, { marginBottom: 100 }]}>
           <View style={styles.nameInputContainer}>
             <TextInput
               style={styles.nameInput}
@@ -245,7 +243,6 @@ export default function MapScreen() {
             </Pressable>
           </View>
         </View>
-        </View>
       </KeyboardAvoidingView>
     </ThemedView>
   );
@@ -260,7 +257,10 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   controlsOverlay: {
-    flex: 1,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     justifyContent: 'flex-end',
     paddingHorizontal: 16,
   },
