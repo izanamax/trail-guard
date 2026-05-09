@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TextInput, Pressable } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TextInput, Pressable, Platform } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import MapView, { Polyline, Marker } from 'react-native-maps';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -15,6 +15,7 @@ import { calculateRouteDistance, calculateElevationGain, formatDate } from '@/ut
 
 export default function RouteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const useCustomTiles = Platform.OS !== 'ios';
   const [route, setRoute] = useState<Route | null>(null);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [loading, setLoading] = useState(true);
