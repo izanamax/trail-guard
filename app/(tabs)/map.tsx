@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { StyleSheet, Alert, Pressable, View, Text, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MapView, { UrlTile, Polyline, Marker, MapPressEvent } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
@@ -128,12 +129,15 @@ export default function MapScreen() {
         pointerEvents="box-none"
       >
         <View style={styles.card}>
-          <TextInput
-            style={styles.nameInput}
-            value={routeName}
-            onChangeText={setRouteName}
-            placeholder="Route Name"
-          />
+          <View style={styles.nameInputContainer}>
+            <TextInput
+              style={styles.nameInput}
+              value={routeName}
+              onChangeText={setRouteName}
+              placeholder="Route Name"
+            />
+            <FontAwesome name="pencil" size={16} color="#666" style={styles.penIcon} />
+          </View>
           <ThemedText style={styles.cardTitle}>Active Gear (for next point)</ThemedText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gearScroll}>
             <Pressable
@@ -208,14 +212,22 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  nameInput: {
-    fontSize: 18,
-    fontWeight: '600',
+  nameInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: '#ccc',
     paddingBottom: 4,
+  },
+  nameInput: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#333',
+  },
+  penIcon: {
+    marginLeft: 8,
   },
   cardTitle: {
     fontSize: 14,
