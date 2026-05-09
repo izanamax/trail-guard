@@ -124,7 +124,7 @@ export default function MapScreen() {
       </MapView>
 
       <KeyboardAvoidingView 
-        style={[styles.controlsOverlay, { paddingBottom: 80 }]}
+        style={[styles.controlsOverlay, { paddingBottom: insets.bottom + 80 }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         pointerEvents="box-none"
       >

@@ -90,7 +90,7 @@ export default function GearListScreen() {
 
         <ScrollView
           style={styles.list}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 80 }]}
           showsVerticalScrollIndicator={false}>
           {!isLoading && gearItems.length === 0 ? (
             <ThemedView style={styles.emptyState}>
