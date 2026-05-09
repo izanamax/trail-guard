@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import MapView, { UrlTile, Polyline, Marker } from 'react-native-maps';
@@ -20,6 +20,9 @@ export default function RouteDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState('');
+  const [offsets, setOffsets] = useState<{ [key: string]: number }>({});
+  const mapRef = useRef<MapView>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     async function fetchDetails() {
@@ -65,6 +68,21 @@ export default function RouteDetailScreen() {
     setIsEditingName(false);
   };
 
+  const focusPoint = (wp: any) => {
+    mapRef.current?.animateToRegion({
+      latitude: wp.latitude,
+      longitude: wp.longitude,
+      latitudeDelta: 0.005,
+      longitudeDelta: 0.005,
+    }, 1000);
+  };
+
+  const scrollToPoint = (id: string) => {
+    if (offsets[id] !== undefined) {
+      scrollRef.current?.scrollTo({ y: offsets[id], animated: true });
+    }
+  };
+
   const initialRegion = route.waypoints.length > 0 
     ? {
         latitude: route.waypoints[0].latitude,
@@ -78,7 +96,10 @@ export default function RouteDetailScreen() {
     <ThemedView style={styles.container}>
       <View style={styles.mapContainer}>
         {initialRegion ? (
-          <MapView style={styles.map} initialRegion={initialRegion}>
+          <MapView 
+            ref={mapRef}
+            style={styles.map} 
+            initialRegion={initialRegion}>
             <UrlTile
               urlTemplate="https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
               maximumZ={17}
@@ -97,14 +118,16 @@ export default function RouteDetailScreen() {
                 />
               );
             })}
-            {route.waypoints.length > 0 && (
-              <>
-                <Marker coordinate={route.waypoints[0]} title="Start" pinColor="green" />
-                {route.waypoints.length > 1 && (
-                  <Marker coordinate={route.waypoints[route.waypoints.length - 1]} title="End" pinColor="blue" />
-                )}
-              </>
-            )}
+            {route.waypoints.length > 0 && route.waypoints.map((wp, index) => (
+              <Marker 
+                key={wp.id}
+                coordinate={wp}
+                onPress={() => scrollToPoint(wp.id)}
+                pinColor={index === 0 ? 'green' : (index === route.waypoints.length - 1 ? 'blue' : 'red')}
+              >
+                <FontAwesome name="circle" size={10} color={wp.gearId ? '#cc5555' : '#666'} />
+              </Marker>
+            ))}
           </MapView>
         ) : (
           <View style={styles.center}>
@@ -113,7 +136,11 @@ export default function RouteDetailScreen() {
         )}
       </View>
 
-      <ScrollView style={styles.detailsContainer}>
+      <ScrollView 
+        ref={scrollRef}
+        style={styles.detailsContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {isEditingName ? (
           <View style={styles.editNameRow}>
             <TextInput
@@ -157,7 +184,15 @@ export default function RouteDetailScreen() {
 
         <ThemedText type="subtitle" style={styles.sectionTitle}>Waypoints & Gear</ThemedText>
         {route.waypoints.map((wp, index) => (
-          <View key={wp.id} style={styles.pointCard}>
+          <Pressable 
+            key={wp.id} 
+            style={styles.pointCard}
+            onPress={() => focusPoint(wp)}
+            onLayout={(e) => {
+              const { y } = e.nativeEvent.layout;
+              setOffsets(prev => ({ ...prev, [wp.id]: y }));
+            }}
+          >
             <View style={styles.pointHeader}>
               <ThemedText style={styles.pointTitle}>Point {index + 1}</ThemedText>
               <ThemedText style={styles.pointElev}>Elev: {wp.elevation ? `${wp.elevation}m` : 'N/A'}</ThemedText>
@@ -169,7 +204,7 @@ export default function RouteDetailScreen() {
             <ThemedText style={styles.pointCoords}>
               {wp.latitude.toFixed(5)}, {wp.longitude.toFixed(5)}
             </ThemedText>
-          </View>
+          </Pressable>
         ))}
       </ScrollView>
     </ThemedView>

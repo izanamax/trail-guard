@@ -43,7 +43,19 @@ export default function MapScreen() {
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
+      // Get last known position first for instant jump
+      const lastKnown = await Location.getLastKnownPositionAsync({});
+      if (lastKnown) {
+        mapRef.current?.animateToRegion({
+          latitude: lastKnown.coords.latitude,
+          longitude: lastKnown.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }, 500);
+      }
+
+      // Then get fresh position with balanced accuracy (faster than highest)
+      let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       mapRef.current?.animateToRegion({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
