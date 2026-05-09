@@ -13,6 +13,7 @@ import { ThemedView } from '@/components/themed-view';
 import { loadRoutes, deleteRoute } from '@/storage/route-storage';
 import type { Route } from '@/types/route';
 import { supabase } from '@/lib/supabase';
+import { formatDate } from '@/utils/route-utils';
 
 export default function RoutesScreen() {
   const insets = useSafeAreaInsets();
@@ -24,6 +25,7 @@ export default function RoutesScreen() {
   const [userId, setUserId] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGearId, setSelectedGearId] = useState<string | null>(params.gearId || null);
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   // Sync param to state when it changes
   React.useEffect(() => {
@@ -38,11 +40,15 @@ export default function RoutesScreen() {
     const loadedRoutes = await loadRoutes(data.user?.id);
     const loadedGear = await loadGearItems(data.user?.id);
     
-    // Sort by date descending
-    loadedRoutes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Sort based on current order
+    loadedRoutes.sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+    });
     setRoutes(loadedRoutes);
     setGearItems(loadedGear);
-  }, []);
+  }, [sortOrder]);
 
   useFocusEffect(
     useCallback(() => {
@@ -63,7 +69,7 @@ export default function RoutesScreen() {
 
   const renderItem = ({ item }: { item: Route }) => {
     const pointCount = item.waypoints.length;
-    const date = new Date(item.createdAt).toLocaleDateString();
+    const date = formatDate(item.createdAt);
 
     return (
       <Pressable 
@@ -85,7 +91,16 @@ export default function RoutesScreen() {
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <ThemedText type="title" style={styles.header}>Your Routes</ThemedText>
+      <View style={styles.headerRow}>
+        <ThemedText type="title">Your Routes</ThemedText>
+        <Pressable 
+          style={styles.sortButton} 
+          onPress={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+        >
+          <FontAwesome name={sortOrder === 'desc' ? "sort-amount-desc" : "sort-amount-asc"} size={16} color="#666" />
+          <ThemedText style={styles.sortButtonText}>{sortOrder === 'desc' ? 'Newest' : 'Oldest'}</ThemedText>
+        </Pressable>
+      </View>
       
       <View style={styles.searchContainer}>
         <FontAwesome name="search" size={16} color="#666" style={styles.searchIcon} />
@@ -246,5 +261,25 @@ const styles = StyleSheet.create({
     color: '#cc5555',
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f2f4f7',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 6,
+  },
+  sortButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666',
   },
 });

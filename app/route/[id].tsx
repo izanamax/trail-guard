@@ -9,9 +9,9 @@ import { ThemedView } from '@/components/themed-view';
 import { getRouteById, updateRoute } from '@/storage/route-storage';
 import { loadGearItems } from '@/storage/gear-storage';
 import { supabase } from '@/lib/supabase';
-import type { Route } from '@/types/route';
+import type { Route, Waypoint } from '@/types/route';
 import type { GearItem } from '@/types/gear';
-import { calculateRouteDistance, calculateElevationGain } from '@/utils/route-utils';
+import { calculateRouteDistance, calculateElevationGain, formatDate } from '@/utils/route-utils';
 
 export default function RouteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -158,13 +158,14 @@ export default function RouteDetailScreen() {
         ) : (
           <View style={styles.nameRow}>
             <ThemedText type="title" style={styles.title}>{route.name}</ThemedText>
+            <ThemedText style={styles.date}>{formatDate(route.createdAt)}</ThemedText>
             <Pressable style={styles.editBtn} onPress={() => setIsEditingName(true)}>
               <FontAwesome name="pencil" size={18} color="#cc5555" />
             </Pressable>
           </View>
         )}
         <ThemedText style={styles.subtitle}>
-          Date: {new Date(route.createdAt).toLocaleDateString()}
+          Date: {formatDate(route.createdAt)}
         </ThemedText>
 
         <View style={styles.statsRow}>

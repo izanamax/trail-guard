@@ -2,8 +2,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { GEAR_CATEGORIES } from '@/types/gear';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -13,6 +15,7 @@ import { loadGearItems } from '@/storage/gear-storage';
 import type { GearItem, GearStatus } from '@/types/gear';
 import { GEAR_CATEGORY_LABELS } from '@/types/gear';
 import { calculateGearStatus } from '@/utils/gear-status';
+import { formatDate } from '@/utils/route-utils';
 
 function getStatusStyle(status: GearStatus) {
   switch (status) {
@@ -38,6 +41,8 @@ export default function GearListScreen() {
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const loadItems = useCallback(async (showLoader: boolean) => {
     setError('');
@@ -65,6 +70,12 @@ export default function GearListScreen() {
     }, [loadItems])
   );
 
+  const filteredItems = gearItems.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !selectedCategory || item.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={['top', 'bottom']}>
       <ThemedView style={styles.container}>
@@ -80,6 +91,43 @@ export default function GearListScreen() {
           manufacturer instructions.
         </ThemedText>
 
+        <View style={styles.searchContainer}>
+          <FontAwesome name="search" size={16} color="#666" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search gear..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery !== '' && (
+            <Pressable onPress={() => setSearchQuery('')}>
+              <FontAwesome name="times-circle" size={16} color="#999" />
+            </Pressable>
+          )}
+        </View>
+
+        <View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+            <Pressable
+              style={[styles.categoryChip, selectedCategory === null && styles.categoryChipActive]}
+              onPress={() => setSelectedCategory(null)}
+            >
+              <ThemedText style={[styles.categoryText, selectedCategory === null && styles.categoryTextActive]}>All</ThemedText>
+            </Pressable>
+            {GEAR_CATEGORIES.map((cat) => (
+              <Pressable
+                key={cat}
+                style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
+                onPress={() => setSelectedCategory(cat)}
+              >
+                <ThemedText style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>
+                  {GEAR_CATEGORY_LABELS[cat]}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+
         {isLoading ? (
           <ThemedView style={styles.loadingBlock}>
             <ActivityIndicator size="small" />
@@ -92,13 +140,15 @@ export default function GearListScreen() {
           style={styles.list}
           contentContainerStyle={[styles.listContent, { paddingBottom: 80 }]}
           showsVerticalScrollIndicator={false}>
-          {!isLoading && gearItems.length === 0 ? (
+          {!isLoading && filteredItems.length === 0 ? (
             <ThemedView style={styles.emptyState}>
-              <ThemedText>No gear yet. Add your first item.</ThemedText>
+              <ThemedText>
+                {gearItems.length === 0 ? "No gear yet. Add your first item." : "No gear matches your search."}
+              </ThemedText>
             </ThemedView>
           ) : null}
 
-          {gearItems.map((item) => {
+          {filteredItems.map((item) => {
             const result = calculateGearStatus(item);
             const daysRemaining = Math.max(0, result.daysRemaining);
             const isManuallyRetired = result.status === 'Manually Retired';
@@ -124,7 +174,7 @@ export default function GearListScreen() {
                   </ThemedText>
                   {isManuallyRetired ? (
                     <ThemedText style={styles.metaText}>
-                      Retired manually{item.retiredAt ? ` on ${item.retiredAt.slice(0, 10)}` : ''}
+                      Retired manually{item.retiredAt ? ` on ${formatDate(item.retiredAt)}` : ''}
                     </ThemedText>
                   ) : (
                     <ThemedText style={styles.metaText}>Days left: {daysRemaining}</ThemedText>
@@ -264,5 +314,46 @@ const styles = StyleSheet.create({
   statusManuallyRetired: {
     color: '#475467',
     backgroundColor: '#f2f4f7',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f2f4f7',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 14,
+    color: '#000',
+  },
+  categoryScroll: {
+    gap: 8,
+    paddingRight: 16,
+  },
+  categoryChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#f2f4f7',
+    borderWidth: 1,
+    borderColor: '#e4e7ec',
+  },
+  categoryChipActive: {
+    backgroundColor: '#cc5555',
+    borderColor: '#cc5555',
+  },
+  categoryText: {
+    fontSize: 13,
+    color: '#475467',
+  },
+  categoryTextActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });

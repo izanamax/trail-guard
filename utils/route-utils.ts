@@ -44,3 +44,18 @@ export function calculateElevationGain(waypoints: Waypoint[]): number {
   }
   return gain;
 }
+
+/**
+ * Formats a date string or object to DD/MM/YY
+ */
+export function formatDate(dateInput: string | Date | undefined): string {
+  if (!dateInput) return 'N/A';
+  const date = new Date(dateInput);
+  if (isNaN(date.getTime())) return 'N/A';
+  
+  const d = date.getDate().toString().padStart(2, '0');
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const y = date.getFullYear().toString().slice(-2);
+  
+  return `${d}/${m}/${y}`;
+}

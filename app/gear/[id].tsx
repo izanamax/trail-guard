@@ -13,7 +13,7 @@ import { deleteGearItem, findGearItemById, updateGearItem } from '@/storage/gear
 import { GEAR_CATEGORY_LABELS, type GearItem, type GearStatus } from '@/types/gear';
 import { calculateGearStatus } from '@/utils/gear-status';
 import { loadRoutes } from '@/storage/route-storage';
-import { calculateRouteDistance } from '@/utils/route-utils';
+import { calculateRouteDistance, formatDate } from '@/utils/route-utils';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 function getStatusStyle(status: GearStatus) {
@@ -47,7 +47,7 @@ export default function GearDetailsScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingRetirement, setIsUpdatingRetirement] = useState(false);
   const [error, setError] = useState('');
-  const [usageStats, setUsageStats] = useState({ distance: 0, count: 0 });
+  const [usageStats, setUsageStats] = useState({ distance: 0, count: 0, elevationGain: 0 });
 
   const loadGearItem = useCallback(async () => {
     if (!gearId) {
@@ -76,18 +76,22 @@ export default function GearDetailsScreen() {
       const routes = await loadRoutes(data.user?.id);
       const gearRoutes = routes.filter(r => r.waypoints.some(wp => wp.gearId === gearId));
       let totalDist = 0;
+      let totalGain = 0;
       gearRoutes.forEach(route => {
         for (let i = 0; i < route.waypoints.length - 1; i++) {
           const wp1 = route.waypoints[i];
           const wp2 = route.waypoints[i+1];
-          // Only add distance if BOTH waypoints are tagged with this gear, 
-          // or more accurately, the segment ending at wp2 is tagged with this gear.
+          // Add distance/gain if the segment is tagged with this gear
           if (wp2.gearId === gearId) {
             totalDist += calculateRouteDistance([wp1, wp2]);
+            if (wp1.elevation !== undefined && wp2.elevation !== undefined) {
+              const diff = wp2.elevation - wp1.elevation;
+              if (diff > 0) totalGain += diff;
+            }
           }
         }
       });
-      setUsageStats({ distance: totalDist, count: gearRoutes.length });
+      setUsageStats({ distance: totalDist, count: gearRoutes.length, elevationGain: totalGain });
     } catch {
       setGearItem(null);
       setError('Failed to load gear item.');
@@ -243,13 +247,17 @@ export default function GearDetailsScreen() {
 
               <ThemedText type="subtitle">{gearItem.name}</ThemedText>
               <ThemedText>Category: {GEAR_CATEGORY_LABELS[gearItem.category]}</ThemedText>
-              <ThemedText>Purchase Date: {gearItem.purchaseDate}</ThemedText>
-              <ThemedText>
-                Manufacture Date: {gearItem.manufactureDate || `${gearItem.purchaseDate} (from purchase)`}
+              <ThemedText style={styles.metaText}>
+                Purchased: {formatDate(gearItem.purchaseDate)}
               </ThemedText>
-              {isManuallyRetired ? (
-                <ThemedText>Manual Retirement Date: {gearItem.retiredAt?.slice(0, 10) || 'Unknown'}</ThemedText>
-              ) : null}
+              {gearItem.retiredAt && (
+                <ThemedText style={styles.metaText}>
+                  Retired: {formatDate(gearItem.retiredAt)}
+                </ThemedText>
+              )}
+              <ThemedText>
+                Manufacture Date: {gearItem.manufactureDate ? formatDate(gearItem.manufactureDate) : `${formatDate(gearItem.purchaseDate)} (from purchase)`}
+              </ThemedText>
               {gearItem.retirementNote ? <ThemedText>Retirement Note: {gearItem.retirementNote}</ThemedText> : null}
               <ThemedText>Lifespan Used: {statusResult.percentageUsed}%</ThemedText>
               <ThemedText>Days Remaining: {daysRemaining}</ThemedText>
@@ -272,6 +280,10 @@ export default function GearDetailsScreen() {
                   <View style={styles.usageStat}>
                     <ThemedText style={styles.usageValue}>{usageStats.distance.toFixed(1)} km</ThemedText>
                     <ThemedText style={styles.usageLabel}>Distance</ThemedText>
+                  </View>
+                  <View style={styles.usageStat}>
+                    <ThemedText style={styles.usageValue}>{usageStats.elevationGain.toFixed(0)} m</ThemedText>
+                    <ThemedText style={styles.usageLabel}>Gain</ThemedText>
                   </View>
                   <View style={styles.usageStat}>
                     <ThemedText style={styles.usageValue}>{usageStats.count}</ThemedText>
