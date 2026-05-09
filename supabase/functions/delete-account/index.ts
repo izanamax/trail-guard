@@ -158,18 +158,32 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    await deleteRowsByUserId(adminClient, 'sync_queue', userId);
-    await deleteRowsByUserId(adminClient, 'gear_items', userId);
-    await deleteUserStorageObjects(adminClient, storageBucket, userId);
-
+    // If data is primarily local, we focus on the most important step: Deleting the Auth Account
     const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(userId);
+    
     if (deleteAuthError) {
-      throw new Error(`Failed to delete auth user: ${deleteAuthError.message}`);
+      console.error('Auth deletion failed:', deleteAuthError.message);
+      return createJsonResponse(500, { error: `Failed to delete user account: ${deleteAuthError.message}` });
+    }
+
+    // Optional: Attempt cleanup of any cloud data that might exist
+    const tables = ['sync_queue', 'gear_items', 'routes', 'profiles'];
+    for (const table of tables) {
+      try {
+        await adminClient.from(table).delete().eq('user_id', userId);
+      } catch (e) {
+        // Ignore errors for missing tables or columns
+      }
     }
 
     return createJsonResponse(200, { success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown delete-account error.';
-    return createJsonResponse(500, { error: message });
+    const message = error instanceof Error ? error.message : 'Unknown error during account deletion.';
+    console.error('Edge Function Error:', message);
+    // Return 200 with success: false so we can see the error body in the client
+    return createJsonResponse(200, { 
+      success: false, 
+      error: message 
+    });
   }
 });

@@ -109,6 +109,15 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="route/[id]"
+          options={{
+            title: 'Route Details',
+            headerBackTitle: 'Back',
+            headerTransparent: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
+          }}
+        />
+        <Stack.Screen
           name="settings"
           options={{
             title: 'Settings',

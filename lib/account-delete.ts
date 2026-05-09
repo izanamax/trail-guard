@@ -14,18 +14,22 @@ export async function deleteAccountAndAllData(): Promise<void> {
     throw new Error('No active user session.');
   }
 
-  const { error: invokeError } = await supabase.functions.invoke('delete-account', {
+  // 1. Clear local data first so the device is clean immediately
+  await clearUserLocalData(userId);
+
+  // 2. Attempt cloud cleanup via Edge Function
+  const { data: invokeData, error: invokeError } = await supabase.functions.invoke('delete-account', {
     body: {},
   });
-
+  
   if (invokeError) {
-    const lowerMessage = invokeError.message?.toLowerCase() ?? '';
-    if (lowerMessage.includes('401') || lowerMessage.includes('unauthorized')) {
-      throw new Error('Session expired. Please log in again and retry account deletion.');
-    }
-    throw new Error(invokeError.message || 'Failed to delete account data.');
+    throw new Error(`Connection failed: ${invokeError.message}`);
   }
 
-  await clearUserLocalData(userId);
+  if (invokeData && invokeData.success === false) {
+    throw new Error(`Cloud error: ${invokeData.error}`);
+  }
+
+  // 3. Always sign out to end the session
   await supabase.auth.signOut();
 }

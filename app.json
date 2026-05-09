@@ -7,9 +7,12 @@
     "icon": "./assets/images/icon.png",
     "scheme": "trailguard",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Trail Guard uses your location to show your position on the map."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -42,7 +45,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
     }
   }
 }
