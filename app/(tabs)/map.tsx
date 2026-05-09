@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { StyleSheet, Alert, Pressable, View, Text, ScrollView, ActivityIndicator, TextInput } from 'react-native';
+import { StyleSheet, Alert, Pressable, View, Text, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import MapView, { UrlTile, Polyline, Marker, MapPressEvent } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
@@ -122,7 +122,11 @@ export default function MapScreen() {
         ))}
       </MapView>
 
-      <View style={[styles.controlsOverlay, { paddingBottom: 80 }]}>
+      <KeyboardAvoidingView 
+        style={[styles.controlsOverlay, { paddingBottom: 80 }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        pointerEvents="box-none"
+      >
         <View style={styles.card}>
           <TextInput
             style={styles.nameInput}
@@ -173,7 +177,7 @@ export default function MapScreen() {
             </Pressable>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </ThemedView>
   );
 }
