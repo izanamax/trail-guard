@@ -11,7 +11,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import MapView, { MapPressEvent, Marker, Polyline, UrlTile } from 'react-native-maps';
+import MapView, { MapPressEvent, Marker, Polyline } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MapScreen() {
@@ -150,11 +150,8 @@ export default function MapScreen() {
           longitudeDelta: 0.0421,
         }}
         onPress={handleMapPress}
+        mapType="terrain"
       >
-        <UrlTile
-          urlTemplate="https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
-          maximumZ={17}
-        />
         {waypoints.length > 1 && waypoints.map((wp, index) => {
           if (index === 0) return null;
           const prevWp = waypoints[index - 1];

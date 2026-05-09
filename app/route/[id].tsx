@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import MapView, { UrlTile, Polyline, Marker } from 'react-native-maps';
+import MapView, { Polyline, Marker } from 'react-native-maps';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { ThemedText } from '@/components/themed-text';
@@ -99,11 +99,8 @@ export default function RouteDetailScreen() {
           <MapView 
             ref={mapRef}
             style={styles.map} 
-            initialRegion={initialRegion}>
-            <UrlTile
-              urlTemplate="https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
-              maximumZ={17}
-            />
+            initialRegion={initialRegion}
+            mapType="terrain">
             {route.waypoints.length > 1 && route.waypoints.map((wp, index) => {
               if (index === 0) return null;
               const prevWp = route.waypoints[index - 1];

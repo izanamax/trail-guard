@@ -78,12 +78,19 @@ export async function clearUserLocalData(userId?: string): Promise<void> {
   try {
     const allKeys = await AsyncStorage.getAllKeys();
     for (const key of allKeys) {
-      if (!key.startsWith('gear_items_')) continue;
-      keysToDelete.add(key);
+      if (
+        key.startsWith('gear_items_') || 
+        key.startsWith('route_items_') || 
+        key.includes('profile_cache')
+      ) {
+        keysToDelete.add(key);
+      }
     }
   } catch {
     // Ignore key enumeration failures and clear known keys only.
   }
 
   await AsyncStorage.multiRemove(Array.from(keysToDelete));
+  // Also clear any legacy keys that might not fit the pattern
+  await AsyncStorage.removeItem('trail_guard_profile_cache_v1');
 }
