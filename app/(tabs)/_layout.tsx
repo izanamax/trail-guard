@@ -16,14 +16,19 @@ export default function TabLayout() {
         <Icon src={<VectorIcon family={FontAwesome} name="gear" />} />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="profile">
-        <Label>Profile</Label>
-        <Icon src={<VectorIcon family={MaterialIcons} name="person" />} />
+      <NativeTabs.Trigger name="routes">
+        <Label>Routes</Label>
+        <Icon src={<VectorIcon family={FontAwesome} name="map-signs" />} />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="map">
         <Label>Map</Label>
         <Icon src={<VectorIcon family={FontAwesome} name="map" />} />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="profile">
+        <Label>Profile</Label>
+        <Icon src={<VectorIcon family={MaterialIcons} name="person" />} />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

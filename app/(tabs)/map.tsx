@@ -101,8 +101,9 @@ export default function MapScreen() {
         onPress={handleMapPress}
       >
         <UrlTile
-          urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          urlTemplate="https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
           maximumZ={19}
+
         />
         {waypoints.length > 0 && (
           <Polyline 
@@ -121,7 +122,7 @@ export default function MapScreen() {
         ))}
       </MapView>
 
-      <View style={[styles.controlsOverlay, { paddingBottom: insets.bottom + 60 }]}>
+      <View style={[styles.controlsOverlay, { paddingBottom: 80 }]}>
         <View style={styles.card}>
           <ThemedText style={styles.cardTitle}>Active Gear (for next point)</ThemedText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gearScroll}>
