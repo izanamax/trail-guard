@@ -221,6 +221,36 @@ export default function ProfileScreen() {
           </ThemedView>
         </ThemedView>
 
+        </ThemedView>
+
+        <ThemedView style={styles.quickActions}>
+          <Pressable
+            style={styles.quickActionButton}
+            onPress={() =>
+              router.push({
+                pathname: '/settings',
+                params: {
+                  name: userName,
+                  email: userEmail,
+                },
+              })
+            }>
+            <ThemedText type="defaultSemiBold">Settings</ThemedText>
+            <ThemedText style={styles.quickActionHint}>Change name and email</ThemedText>
+          </Pressable>
+          <Pressable style={styles.quickActionButton} onPress={() => router.push('/security')}>
+            <ThemedText type="defaultSemiBold">Security</ThemedText>
+            <ThemedText style={styles.quickActionHint}>Read safety guidance and limits</ThemedText>
+          </Pressable>
+        </ThemedView>
+
+        {/* <ThemedView style={styles.noticeCard}>
+          <ThemedText type="defaultSemiBold">Privacy controls</ThemedText>
+          <ThemedText style={styles.noticeText}>
+            You can permanently delete your account and associated Trail Guard data from here.
+          </ThemedText>
+        </ThemedView> */}
+
         {actionError ? <ThemedText style={styles.errorText}>{actionError}</ThemedText> : null}
 
         <Pressable
@@ -284,6 +314,27 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     gap: 12,
+  },
+  noticeText: {
+    opacity: 0.75,
+  },
+  quickActions: {
+    gap: 10,
+  },
+  quickActionButton: {
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#8f8f8f66',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 2,
+  },
+  noticeCard: {
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#8f8f8f66',
+    padding: 14,
+    gap: 4,
   },
   noticeText: {
     opacity: 0.75,

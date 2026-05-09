@@ -85,6 +85,8 @@ export async function clearUserLocalData(userId?: string): Promise<void> {
       ) {
         keysToDelete.add(key);
       }
+      if (!key.startsWith('gear_items_')) continue;
+      keysToDelete.add(key);
     }
   } catch {
     // Ignore key enumeration failures and clear known keys only.

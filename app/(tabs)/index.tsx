@@ -175,6 +175,7 @@ export default function GearListScreen() {
                   {isManuallyRetired ? (
                     <ThemedText style={styles.metaText}>
                       Retired manually{item.retiredAt ? ` on ${formatDate(item.retiredAt)}` : ''}
+                      Retired manually{item.retiredAt ? ` on ${item.retiredAt.slice(0, 10)}` : ''}
                     </ThemedText>
                   ) : (
                     <ThemedText style={styles.metaText}>Days left: {daysRemaining}</ThemedText>

@@ -258,6 +258,9 @@ export default function GearDetailsScreen() {
               <ThemedText>
                 Manufacture Date: {gearItem.manufactureDate ? formatDate(gearItem.manufactureDate) : `${formatDate(gearItem.purchaseDate)} (from purchase)`}
               </ThemedText>
+              {isManuallyRetired ? (
+                <ThemedText>Manual Retirement Date: {gearItem.retiredAt?.slice(0, 10) || 'Unknown'}</ThemedText>
+              ) : null}
               {gearItem.retirementNote ? <ThemedText>Retirement Note: {gearItem.retirementNote}</ThemedText> : null}
               <ThemedText>Lifespan Used: {statusResult.percentageUsed}%</ThemedText>
               <ThemedText>Days Remaining: {daysRemaining}</ThemedText>
