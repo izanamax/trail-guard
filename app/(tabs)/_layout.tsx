@@ -20,6 +20,11 @@ export default function TabLayout() {
         <Label>Profile</Label>
         <Icon src={<VectorIcon family={MaterialIcons} name="person" />} />
       </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="map">
+        <Label>Map</Label>
+        <Icon src={<VectorIcon family={FontAwesome} name="map" />} />
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
