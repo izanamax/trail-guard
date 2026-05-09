@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import MapView, { UrlTile, Polyline, Marker } from 'react-native-maps';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -131,7 +132,7 @@ export default function RouteDetailScreen() {
           <View style={styles.nameRow}>
             <ThemedText type="title" style={styles.title}>{route.name}</ThemedText>
             <Pressable style={styles.editBtn} onPress={() => setIsEditingName(true)}>
-              <ThemedText style={styles.editBtnText}>Edit</ThemedText>
+              <FontAwesome name="pencil" size={18} color="#cc5555" />
             </Pressable>
           </View>
         )}
@@ -208,14 +209,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   editBtn: {
-    padding: 6,
-    backgroundColor: '#f2f4f7',
-    borderRadius: 6,
-    marginLeft: 10,
-  },
-  editBtnText: {
-    fontSize: 14,
-    color: '#344054',
+    marginLeft: 8,
+    padding: 4,
   },
   editNameRow: {
     flexDirection: 'row',
