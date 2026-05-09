@@ -80,8 +80,8 @@ export default function RouteDetailScreen() {
         {initialRegion ? (
           <MapView style={styles.map} initialRegion={initialRegion}>
             <UrlTile
-              urlTemplate="https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-              maximumZ={19}
+              urlTemplate="https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
+              maximumZ={17}
             />
             {route.waypoints.length > 1 && route.waypoints.map((wp, index) => {
               if (index === 0) return null;

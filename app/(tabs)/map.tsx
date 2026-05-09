@@ -103,9 +103,8 @@ export default function MapScreen() {
         onPress={handleMapPress}
       >
         <UrlTile
-          urlTemplate="https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-          maximumZ={19}
-
+          urlTemplate="https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
+          maximumZ={17}
         />
         {waypoints.length > 1 && waypoints.map((wp, index) => {
           if (index === 0) return null;
