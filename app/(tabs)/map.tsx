@@ -181,9 +181,9 @@ export default function MapScreen() {
 
       <KeyboardAvoidingView 
         style={StyleSheet.absoluteFillObject}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         pointerEvents="box-none"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 80}
       >
         <View style={styles.controlsOverlay} pointerEvents="box-none">
           <View style={[styles.card, { marginBottom: 100 }]}>
