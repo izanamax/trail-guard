@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TextInput, Pressable } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TextInput, Pressable, Platform } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import MapView, { UrlTile, Polyline, Marker } from 'react-native-maps';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -15,6 +15,7 @@ import { calculateRouteDistance, calculateElevationGain, formatDate } from '@/ut
 
 export default function RouteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const useCustomTiles = Platform.OS !== 'ios';
   const [route, setRoute] = useState<Route | null>(null);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,10 +101,12 @@ export default function RouteDetailScreen() {
             ref={mapRef}
             style={styles.map} 
             initialRegion={initialRegion}>
-            <UrlTile
-              urlTemplate="https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
-              maximumZ={17}
-            />
+            {useCustomTiles ? (
+              <UrlTile
+                urlTemplate="https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
+                maximumZ={17}
+              />
+            ) : null}
             {route.waypoints.length > 1 && route.waypoints.map((wp, index) => {
               if (index === 0) return null;
               const prevWp = route.waypoints[index - 1];

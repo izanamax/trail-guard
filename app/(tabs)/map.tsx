@@ -1,6 +1,5 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { supabase } from '@/lib/supabase';
 import { loadGearItems } from '@/storage/gear-storage';
 import { addRoute } from '@/storage/route-storage';
@@ -16,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
-  const backgroundColor = useThemeColor({}, 'background');
+  const useCustomTiles = Platform.OS !== 'ios';
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [activeGearId, setActiveGearId] = useState<string | null>(null);
@@ -24,7 +23,11 @@ export default function MapScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | undefined>();
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const mapRef = useRef<MapView>(null);
+  const controlsBottomPadding =
+    (Platform.OS === 'ios' ? insets.bottom + 80 : 90) + keyboardOffset;
 
   useEffect(() => {
     async function loadData() {
@@ -50,11 +53,20 @@ export default function MapScreen() {
 
   const jumpToLocation = async () => {
     try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      setIsLocating(true);
+
+      let { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted') {
+        const requestResult = await Location.requestForegroundPermissionsAsync();
+        status = requestResult.status;
+      }
+
+      if (status !== 'granted') {
+        setHasLocationPermission(false);
         Alert.alert('Permission denied', 'Location permission is required.');
         return;
       }
+      setHasLocationPermission(true);
 
       // Get last known position first for instant jump
       const lastKnown = await Location.getLastKnownPositionAsync({});
@@ -75,8 +87,11 @@ export default function MapScreen() {
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       }, 1000);
-    } catch (e) {
+    } catch (error) {
+      console.error('Could not get your location:', error);
       Alert.alert('Error', 'Could not get your location.');
+    } finally {
+      setIsLocating(false);
     }
   };
 
@@ -127,7 +142,8 @@ export default function MapScreen() {
       await addRoute(newRoute);
       Alert.alert('Success', 'Route saved successfully!');
       setWaypoints([]);
-    } catch (e) {
+    } catch (error) {
+      console.error('Failed to save route:', error);
       Alert.alert('Error', 'Failed to save route.');
     } finally {
       setIsSaving(false);
@@ -139,7 +155,7 @@ export default function MapScreen() {
   };
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+    <ThemedView style={styles.container}>
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -150,11 +166,15 @@ export default function MapScreen() {
           longitudeDelta: 0.0421,
         }}
         onPress={handleMapPress}
+        showsUserLocation={hasLocationPermission}
+        followsUserLocation={hasLocationPermission}
       >
-        <UrlTile
-          urlTemplate="https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
-          maximumZ={17}
-        />
+        {useCustomTiles ? (
+          <UrlTile
+            urlTemplate="https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
+            maximumZ={17}
+          />
+        ) : null}
         {waypoints.length > 1 && waypoints.map((wp, index) => {
           if (index === 0) return null;
           const prevWp = waypoints[index - 1];
@@ -188,12 +208,15 @@ export default function MapScreen() {
         )}
       </MapView>
 
-      <Pressable style={[styles.locationButton, { top: insets.top + 60 }]} onPress={jumpToLocation}>
-        <FontAwesome name="location-arrow" size={20} color="#333" />
-      </Pressable>
-
       <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
-        <View style={[styles.controlsOverlay, { paddingBottom: 90 + keyboardOffset }]} pointerEvents="box-none">
+        <View style={[styles.controlsOverlay, { paddingBottom: controlsBottomPadding }]} pointerEvents="box-none">
+          <Pressable style={styles.locationButton} onPress={jumpToLocation} disabled={isLocating}>
+            {isLocating ? (
+              <ActivityIndicator size="small" color="#333" />
+            ) : (
+              <FontAwesome name="location-arrow" size={20} color="#333" />
+            )}
+          </Pressable>
           <View style={styles.card}>
             <View style={styles.nameInputContainer}>
               <TextInput
@@ -353,8 +376,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   locationButton: {
-    position: 'absolute',
-    right: 16,
+    alignSelf: 'flex-end',
+    marginBottom: 10,
     backgroundColor: '#fff',
     width: 44,
     height: 44,
@@ -366,7 +389,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
-    zIndex: 10,
   },
   buttonPrimary: {
     flex: 2,
