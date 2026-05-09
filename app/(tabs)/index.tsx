@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     opacity: 0.8,
-    backgroundColor: 'red',
+    backgroundColor: '#fff8e1',
     borderRadius: 8,
     padding: 10,
   },
