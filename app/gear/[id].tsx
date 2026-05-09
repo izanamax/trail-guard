@@ -14,6 +14,7 @@ import { GEAR_CATEGORY_LABELS, type GearItem, type GearStatus } from '@/types/ge
 import { calculateGearStatus } from '@/utils/gear-status';
 import { loadRoutes } from '@/storage/route-storage';
 import { calculateRouteDistance } from '@/utils/route-utils';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 function getStatusStyle(status: GearStatus) {
   switch (status) {
@@ -259,8 +260,14 @@ export default function GearDetailsScreen() {
                 Inspect before every use. Follow manufacturer instructions.
               </ThemedText>
 
-              <ThemedView style={styles.usageCard}>
-                <ThemedText type="defaultSemiBold" style={styles.usageTitle}>Usage Statistics</ThemedText>
+              <Pressable 
+                style={styles.usageCard}
+                onPress={() => router.push({ pathname: '/(tabs)/routes', params: { gearId: gearItem.id } })}
+              >
+                <View style={styles.usageHeader}>
+                  <ThemedText type="defaultSemiBold" style={styles.usageTitle}>Usage Statistics</ThemedText>
+                  <ThemedText style={styles.usageHint}>Tap to see routes <FontAwesome name="chevron-right" size={10} /></ThemedText>
+                </View>
                 <View style={styles.usageRow}>
                   <View style={styles.usageStat}>
                     <ThemedText style={styles.usageValue}>{usageStats.distance.toFixed(1)} km</ThemedText>
@@ -271,7 +278,7 @@ export default function GearDetailsScreen() {
                     <ThemedText style={styles.usageLabel}>Routes</ThemedText>
                   </View>
                 </View>
-              </ThemedView>
+              </Pressable>
 
               <ThemedView style={styles.actions}>
                 <Pressable
@@ -447,8 +454,18 @@ const styles = StyleSheet.create({
   },
   usageTitle: {
     fontSize: 14,
-    marginBottom: 10,
     color: '#333',
+  },
+  usageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  usageHint: {
+    fontSize: 11,
+    color: '#cc5555',
+    fontWeight: '500',
   },
   usageRow: {
     flexDirection: 'row',

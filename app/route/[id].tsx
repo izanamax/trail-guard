@@ -124,9 +124,9 @@ export default function RouteDetailScreen() {
                 coordinate={wp}
                 onPress={() => scrollToPoint(wp.id)}
                 pinColor={index === 0 ? 'green' : (index === route.waypoints.length - 1 ? 'blue' : 'red')}
-              >
-                <FontAwesome name="circle" size={10} color={wp.gearId ? '#cc5555' : '#666'} />
-              </Marker>
+                title={`Point ${index + 1}`}
+                description={getGearName(wp.gearId)}
+              />
             ))}
           </MapView>
         ) : (

@@ -2,7 +2,11 @@ import React, { useState, useCallback } from 'react';
 import { StyleSheet, FlatList, Pressable, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { TextInput } from 'react-native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { loadGearItems } from '@/storage/gear-storage';
+import { GearItem } from '@/types/gear';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -13,16 +17,31 @@ import { supabase } from '@/lib/supabase';
 export default function RoutesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ gearId?: string }>();
+  
   const [routes, setRoutes] = useState<Route[]>([]);
+  const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [userId, setUserId] = useState<string | undefined>();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGearId, setSelectedGearId] = useState<string | null>(params.gearId || null);
+
+  // Sync param to state when it changes
+  React.useEffect(() => {
+    if (params.gearId) {
+      setSelectedGearId(params.gearId);
+    }
+  }, [params.gearId]);
 
   const fetchRoutes = useCallback(async () => {
     const { data } = await supabase.auth.getUser();
     setUserId(data.user?.id);
     const loadedRoutes = await loadRoutes(data.user?.id);
+    const loadedGear = await loadGearItems(data.user?.id);
+    
     // Sort by date descending
     loadedRoutes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setRoutes(loadedRoutes);
+    setGearItems(loadedGear);
   }, []);
 
   useFocusEffect(
@@ -35,6 +54,12 @@ export default function RoutesScreen() {
     await deleteRoute(id, userId);
     fetchRoutes();
   };
+
+  const filteredRoutes = routes.filter(route => {
+    const matchesSearch = route.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesGear = !selectedGearId || route.waypoints.some(wp => wp.gearId === selectedGearId);
+    return matchesSearch && matchesGear;
+  });
 
   const renderItem = ({ item }: { item: Route }) => {
     const pointCount = item.waypoints.length;
@@ -62,16 +87,50 @@ export default function RoutesScreen() {
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <ThemedText type="title" style={styles.header}>Your Routes</ThemedText>
       
-      {routes.length === 0 ? (
-        <View style={styles.emptyState}>
-          <ThemedText>No routes saved yet.</ThemedText>
-          <Pressable style={styles.mapButton} onPress={() => router.navigate('/(tabs)/map')}>
-            <ThemedText style={styles.mapButtonText}>Go to Map</ThemedText>
+      <View style={styles.searchContainer}>
+        <FontAwesome name="search" size={16} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search routes by name..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery !== '' && (
+          <Pressable onPress={() => setSearchQuery('')}>
+            <FontAwesome name="times-circle" size={16} color="#999" />
           </Pressable>
+        )}
+      </View>
+
+      {selectedGearId && (
+        <View style={styles.filterBar}>
+          <ThemedText style={styles.filterText}>
+            Filtering by: {gearItems.find(g => g.id === selectedGearId)?.name || 'Unknown Gear'}
+          </ThemedText>
+          <Pressable onPress={() => setSelectedGearId(null)} style={styles.clearFilter}>
+            <ThemedText style={styles.clearFilterText}>Clear</ThemedText>
+          </Pressable>
+        </View>
+      )}
+
+      {filteredRoutes.length === 0 ? (
+        <View style={styles.emptyState}>
+          <ThemedText>
+            {routes.length === 0 ? "No routes saved yet." : "No routes match your search."}
+          </ThemedText>
+          {routes.length === 0 ? (
+            <Pressable style={styles.mapButton} onPress={() => router.navigate('/(tabs)/map')}>
+              <ThemedText style={styles.mapButtonText}>Go to Map</ThemedText>
+            </Pressable>
+          ) : (
+            <Pressable style={styles.clearFilter} onPress={() => { setSearchQuery(''); setSelectedGearId(null); }}>
+              <ThemedText style={styles.clearFilterText}>Clear all filters</ThemedText>
+            </Pressable>
+          )}
         </View>
       ) : (
         <FlatList
-          data={routes}
+          data={filteredRoutes}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 80 }]}
@@ -145,5 +204,47 @@ const styles = StyleSheet.create({
   mapButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f2f4f7',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    height: 44,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 14,
+  },
+  filterBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff4d9',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#ffecb3',
+  },
+  filterText: {
+    fontSize: 13,
+    color: '#8a5a00',
+    fontWeight: '500',
+  },
+  clearFilter: {
+    padding: 4,
+  },
+  clearFilterText: {
+    fontSize: 13,
+    color: '#cc5555',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
