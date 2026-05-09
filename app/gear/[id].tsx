@@ -12,6 +12,8 @@ import { supabase } from '@/lib/supabase';
 import { deleteGearItem, findGearItemById, updateGearItem } from '@/storage/gear-storage';
 import { GEAR_CATEGORY_LABELS, type GearItem, type GearStatus } from '@/types/gear';
 import { calculateGearStatus } from '@/utils/gear-status';
+import { loadRoutes } from '@/storage/route-storage';
+import { calculateRouteDistance } from '@/utils/route-utils';
 
 function getStatusStyle(status: GearStatus) {
   switch (status) {
@@ -44,6 +46,7 @@ export default function GearDetailsScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingRetirement, setIsUpdatingRetirement] = useState(false);
   const [error, setError] = useState('');
+  const [usageStats, setUsageStats] = useState({ distance: 0, count: 0 });
 
   const loadGearItem = useCallback(async () => {
     if (!gearId) {
@@ -67,6 +70,23 @@ export default function GearDetailsScreen() {
       }
 
       setGearItem(item);
+
+      // Load usage stats
+      const routes = await loadRoutes(data.user?.id);
+      const gearRoutes = routes.filter(r => r.waypoints.some(wp => wp.gearId === gearId));
+      let totalDist = 0;
+      gearRoutes.forEach(route => {
+        for (let i = 0; i < route.waypoints.length - 1; i++) {
+          const wp1 = route.waypoints[i];
+          const wp2 = route.waypoints[i+1];
+          // Only add distance if BOTH waypoints are tagged with this gear, 
+          // or more accurately, the segment ending at wp2 is tagged with this gear.
+          if (wp2.gearId === gearId) {
+            totalDist += calculateRouteDistance([wp1, wp2]);
+          }
+        }
+      });
+      setUsageStats({ distance: totalDist, count: gearRoutes.length });
     } catch {
       setGearItem(null);
       setError('Failed to load gear item.');
@@ -239,6 +259,20 @@ export default function GearDetailsScreen() {
                 Inspect before every use. Follow manufacturer instructions.
               </ThemedText>
 
+              <ThemedView style={styles.usageCard}>
+                <ThemedText type="defaultSemiBold" style={styles.usageTitle}>Usage Statistics</ThemedText>
+                <View style={styles.usageRow}>
+                  <View style={styles.usageStat}>
+                    <ThemedText style={styles.usageValue}>{usageStats.distance.toFixed(1)} km</ThemedText>
+                    <ThemedText style={styles.usageLabel}>Distance</ThemedText>
+                  </View>
+                  <View style={styles.usageStat}>
+                    <ThemedText style={styles.usageValue}>{usageStats.count}</ThemedText>
+                    <ThemedText style={styles.usageLabel}>Routes</ThemedText>
+                  </View>
+                </View>
+              </ThemedView>
+
               <ThemedView style={styles.actions}>
                 <Pressable
                   style={styles.editButton}
@@ -404,5 +438,32 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  usageCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+  },
+  usageTitle: {
+    fontSize: 14,
+    marginBottom: 10,
+    color: '#333',
+  },
+  usageRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  usageStat: {
+    alignItems: 'center',
+  },
+  usageValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#cc5555',
+  },
+  usageLabel: {
+    fontSize: 12,
+    color: '#666',
   },
 });
