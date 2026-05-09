@@ -181,10 +181,10 @@ export default function MapScreen() {
 
       <KeyboardAvoidingView 
         style={styles.controlsOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
         pointerEvents="box-none"
       >
-        <View style={[styles.card, { marginBottom: 100 }]}>
+        <View style={styles.card}>
           <View style={styles.nameInputContainer}>
             <TextInput
               style={styles.nameInput}
@@ -263,6 +263,7 @@ const styles = StyleSheet.create({
     right: 0,
     justifyContent: 'flex-end',
     paddingHorizontal: 16,
+    paddingBottom: 100,
   },
   card: {
     backgroundColor: '#ffffff',
