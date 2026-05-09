@@ -9,7 +9,7 @@ import { calculateElevationGain, calculateRouteDistance } from '@/utils/route-ut
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Easing, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { MapPressEvent, Marker, Polyline } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,12 +22,11 @@ export default function MapScreen() {
   const [routeName, setRouteName] = useState<string>('New Route');
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | undefined>();
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const mapRef = useRef<MapView>(null);
-  const controlsBottomPadding =
-    (Platform.OS === 'ios' ? insets.bottom + 80 : 90) + keyboardOffset;
+  const keyboardLift = useRef(new Animated.Value(0)).current;
+  const controlsBottomPadding = Platform.OS === 'ios' ? insets.bottom + 80 : 90;
 
   useEffect(() => {
     async function loadData() {
@@ -39,17 +38,30 @@ export default function MapScreen() {
     loadData();
 
     const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => {
-      setKeyboardOffset(e.endCoordinates.height - 335);
+      const keyboardHeight = e.endCoordinates?.height ?? 0;
+      const targetLift = Math.max(0, keyboardHeight + 12 - controlsBottomPadding);
+
+      Animated.timing(keyboardLift, {
+        toValue: targetLift,
+        duration: e.duration ?? (Platform.OS === 'ios' ? 250 : 180),
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
     });
-    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => {
-      setKeyboardOffset(0);
+    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', (e) => {
+      Animated.timing(keyboardLift, {
+        toValue: 0,
+        duration: e.duration ?? (Platform.OS === 'ios' ? 250 : 180),
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
     });
 
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, []);
+  }, [controlsBottomPadding, keyboardLift]);
 
   const jumpToLocation = async () => {
     try {
@@ -169,6 +181,7 @@ export default function MapScreen() {
         mapType="terrain"
         showsUserLocation={hasLocationPermission}
         followsUserLocation={hasLocationPermission}
+        showsMyLocationButton={false}
       >
         {waypoints.length > 1 && waypoints.map((wp, index) => {
           if (index === 0) return null;
@@ -204,7 +217,16 @@ export default function MapScreen() {
       </MapView>
 
       <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
-        <View style={[styles.controlsOverlay, { paddingBottom: controlsBottomPadding }]} pointerEvents="box-none">
+        <Animated.View
+          style={[
+            styles.controlsOverlay,
+            {
+              paddingBottom: controlsBottomPadding,
+              transform: [{ translateY: Animated.multiply(keyboardLift, -1) }],
+            },
+          ]}
+          pointerEvents="box-none"
+        >
           <Pressable style={styles.locationButton} onPress={jumpToLocation} disabled={isLocating}>
             {isLocating ? (
               <ActivityIndicator size="small" color="#333" />
@@ -271,7 +293,7 @@ export default function MapScreen() {
               </Pressable>
             </View>
           </View>
-        </View>
+        </Animated.View>
       </View>
     </ThemedView>
   );
