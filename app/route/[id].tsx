@@ -82,19 +82,28 @@ export default function RouteDetailScreen() {
               urlTemplate="https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
               maximumZ={19}
             />
-            <Polyline 
-              coordinates={route.waypoints} 
-              strokeColor="#cc5555" 
-              strokeWidth={4} 
-            />
-            {route.waypoints.map((wp, index) => (
-              <Marker 
-                key={wp.id} 
-                coordinate={{ latitude: wp.latitude, longitude: wp.longitude }}
-                title={`Point ${index + 1}`}
-                description={`Gear: ${getGearName(wp.gearId)}`}
-              />
-            ))}
+            {route.waypoints.length > 1 && route.waypoints.map((wp, index) => {
+              if (index === 0) return null;
+              const prevWp = route.waypoints[index - 1];
+              const gearColor = wp.gearId ? `#${Math.abs(wp.gearId.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)).toString(16).substring(0, 6)}` : '#cc5555';
+              
+              return (
+                <Polyline 
+                  key={`seg-${index}`}
+                  coordinates={[prevWp, wp]} 
+                  strokeColor={gearColor} 
+                  strokeWidth={5} 
+                />
+              );
+            })}
+            {route.waypoints.length > 0 && (
+              <>
+                <Marker coordinate={route.waypoints[0]} title="Start" pinColor="green" />
+                {route.waypoints.length > 1 && (
+                  <Marker coordinate={route.waypoints[route.waypoints.length - 1]} title="End" pinColor="blue" />
+                )}
+              </>
+            )}
           </MapView>
         ) : (
           <View style={styles.center}>
@@ -152,7 +161,10 @@ export default function RouteDetailScreen() {
               <ThemedText style={styles.pointTitle}>Point {index + 1}</ThemedText>
               <ThemedText style={styles.pointElev}>Elev: {wp.elevation ? `${wp.elevation}m` : 'N/A'}</ThemedText>
             </View>
-            <ThemedText style={styles.pointGear}>Active Gear: {getGearName(wp.gearId)}</ThemedText>
+            <View style={styles.gearRow}>
+              <View style={[styles.gearColorBar, { backgroundColor: wp.gearId ? `#${Math.abs(wp.gearId.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)).toString(16).substring(0, 6)}` : '#cc5555' }]} />
+              <ThemedText style={styles.pointGear}>Active Gear: {getGearName(wp.gearId)}</ThemedText>
+            </View>
             <ThemedText style={styles.pointCoords}>
               {wp.latitude.toFixed(5)}, {wp.longitude.toFixed(5)}
             </ThemedText>
@@ -301,9 +313,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   pointGear: {
-    color: '#cc5555',
+    color: '#333',
     fontWeight: '500',
+  },
+  gearRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 4,
+  },
+  gearColorBar: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   pointCoords: {
     fontSize: 12,

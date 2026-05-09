@@ -107,21 +107,37 @@ export default function MapScreen() {
           maximumZ={19}
 
         />
+        {waypoints.length > 1 && waypoints.map((wp, index) => {
+          if (index === 0) return null;
+          const prevWp = waypoints[index - 1];
+          // Simple hash-based color for gear or default red
+          const gearColor = wp.gearId ? `#${Math.abs(wp.gearId.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)).toString(16).substring(0, 6)}` : '#cc5555';
+          
+          return (
+            <Polyline 
+              key={`seg-${index}`}
+              coordinates={[prevWp, wp]} 
+              strokeColor={gearColor} 
+              strokeWidth={5} 
+            />
+          );
+        })}
         {waypoints.length > 0 && (
-          <Polyline 
-            coordinates={waypoints} 
-            strokeColor="#cc5555" 
-            strokeWidth={4} 
-          />
+          <>
+            <Marker 
+              coordinate={waypoints[0]}
+              title="Start"
+              pinColor="green"
+            />
+            {waypoints.length > 1 && (
+              <Marker 
+                coordinate={waypoints[waypoints.length - 1]}
+                title="End"
+                pinColor="blue"
+              />
+            )}
+          </>
         )}
-        {waypoints.map((wp, index) => (
-          <Marker 
-            key={wp.id} 
-            coordinate={{ latitude: wp.latitude, longitude: wp.longitude }}
-            title={`Point ${index + 1}`}
-            description={`Elev: ${wp.elevation ?? '...'}m | Gear: ${gearItems.find(g => g.id === wp.gearId)?.name ?? 'None'}`}
-          />
-        ))}
       </MapView>
 
       <KeyboardAvoidingView 
