@@ -10,6 +10,7 @@ import { loadGearItems } from '@/storage/gear-storage';
 import { addRoute } from '@/storage/route-storage';
 import type { GearItem } from '@/types/gear';
 import type { Waypoint, Route } from '@/types/route';
+import { calculateRouteDistance, calculateElevationGain } from '@/utils/route-utils';
 import { supabase } from '@/lib/supabase';
 
 export default function MapScreen() {
@@ -161,12 +162,18 @@ export default function MapScreen() {
           </ScrollView>
 
           <View style={styles.statsRow}>
-            <ThemedText style={styles.statsText}>Points: {waypoints.length}</ThemedText>
-            {waypoints.length > 0 && waypoints[waypoints.length - 1].elevation !== undefined && (
-              <ThemedText style={styles.statsText}>
-                Last Elev: {waypoints[waypoints.length - 1].elevation}m
-              </ThemedText>
-            )}
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statsLabel}>Points</ThemedText>
+              <ThemedText style={styles.statsValue}>{waypoints.length}</ThemedText>
+            </View>
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statsLabel}>Distance</ThemedText>
+              <ThemedText style={styles.statsValue}>{calculateRouteDistance(waypoints).toFixed(2)} km</ThemedText>
+            </View>
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statsLabel}>Gain</ThemedText>
+              <ThemedText style={styles.statsValue}>{calculateElevationGain(waypoints).toFixed(0)} m</ThemedText>
+            </View>
           </View>
 
           <View style={styles.actionRow}>
@@ -260,10 +267,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
+    backgroundColor: '#f8f9fa',
+    padding: 10,
+    borderRadius: 10,
   },
-  statsText: {
-    fontSize: 14,
+  statItem: {
+    alignItems: 'center',
+  },
+  statsLabel: {
+    fontSize: 10,
     color: '#666',
+    textTransform: 'uppercase',
+  },
+  statsValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#cc5555',
   },
   actionRow: {
     flexDirection: 'row',

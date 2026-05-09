@@ -10,6 +10,7 @@ import { loadGearItems } from '@/storage/gear-storage';
 import { supabase } from '@/lib/supabase';
 import type { Route } from '@/types/route';
 import type { GearItem } from '@/types/gear';
+import { calculateRouteDistance, calculateElevationGain } from '@/utils/route-utils';
 
 export default function RouteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -129,6 +130,21 @@ export default function RouteDetailScreen() {
           Date: {new Date(route.createdAt).toLocaleDateString()}
         </ThemedText>
 
+        <View style={styles.statsRow}>
+          <View style={styles.statBox}>
+            <ThemedText style={styles.statValue}>{calculateRouteDistance(route.waypoints).toFixed(2)} km</ThemedText>
+            <ThemedText style={styles.statLabel}>Distance</ThemedText>
+          </View>
+          <View style={styles.statBox}>
+            <ThemedText style={styles.statValue}>{calculateElevationGain(route.waypoints).toFixed(0)} m</ThemedText>
+            <ThemedText style={styles.statLabel}>Elev Gain</ThemedText>
+          </View>
+          <View style={styles.statBox}>
+            <ThemedText style={styles.statValue}>{route.waypoints.length}</ThemedText>
+            <ThemedText style={styles.statLabel}>Points</ThemedText>
+          </View>
+        </View>
+
         <ThemedText type="subtitle" style={styles.sectionTitle}>Waypoints & Gear</ThemedText>
         {route.waypoints.map((wp, index) => (
           <View key={wp.id} style={styles.pointCard}>
@@ -232,6 +248,36 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 12,
+    marginTop: 10,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#eee',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  statBox: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#cc5555',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
   },
   pointCard: {
     backgroundColor: '#f9f9f9',

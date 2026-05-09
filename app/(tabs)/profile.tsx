@@ -16,6 +16,10 @@ import {
   type CachedProfile,
 } from '@/lib/profile-cache';
 import { supabase } from '@/lib/supabase';
+import { loadGearItems } from '@/storage/gear-storage';
+import { loadRoutes } from '@/storage/route-storage';
+import { calculateGearStatus } from '@/utils/gear-status';
+import { calculateRouteDistance } from '@/utils/route-utils';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -26,6 +30,10 @@ export default function ProfileScreen() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [totalGear, setTotalGear] = useState(0);
+  const [attentionCount, setAttentionCount] = useState(0);
+  const [totalRoutes, setTotalRoutes] = useState(0);
+  const [totalDistance, setTotalDistance] = useState(0);
 
   const applyProfile = useCallback((profile: CachedProfile | null) => {
     if (!profile) return;
@@ -46,6 +54,21 @@ export default function ProfileScreen() {
         applyProfile(mapped);
         await cacheProfileFromUser(data.user ?? null);
       }
+
+      // Load gear stats
+      const items = await loadGearItems(data.user?.id);
+      setTotalGear(items.length);
+      const needsAttention = items.filter((item) => {
+        const { status } = calculateGearStatus(item);
+        return status === 'Warning' || status === 'Retire Soon' || status === 'Expired';
+      });
+      setAttentionCount(needsAttention.length);
+
+      // Load route stats
+      const routes = await loadRoutes(data.user?.id);
+      setTotalRoutes(routes.length);
+      const distance = routes.reduce((sum, r) => sum + calculateRouteDistance(r.waypoints), 0);
+      setTotalDistance(distance);
     } catch {
       // Keep last known profile values if request fails.
     }
@@ -176,12 +199,27 @@ export default function ProfileScreen() {
           </Pressable>
         </ThemedView>
 
-        {/* <ThemedView style={styles.noticeCard}>
-          <ThemedText type="defaultSemiBold">Privacy controls</ThemedText>
-          <ThemedText style={styles.noticeText}>
-            You can permanently delete your account and associated Trail Guard data from here.
-          </ThemedText>
-        </ThemedView> */}
+        <ThemedView style={styles.statsRow}>
+          <ThemedView style={styles.statCard}>
+            <ThemedText type="subtitle">{totalGear}</ThemedText>
+            <ThemedText style={styles.statLabel}>Gear Items</ThemedText>
+          </ThemedView>
+          <ThemedView style={styles.statCard}>
+            <ThemedText type="subtitle">{attentionCount}</ThemedText>
+            <ThemedText style={styles.statLabel}>Attention</ThemedText>
+          </ThemedView>
+        </ThemedView>
+
+        <ThemedView style={styles.statsRow}>
+          <ThemedView style={styles.statCard}>
+            <ThemedText type="subtitle">{totalRoutes}</ThemedText>
+            <ThemedText style={styles.statLabel}>Routes</ThemedText>
+          </ThemedView>
+          <ThemedView style={styles.statCard}>
+            <ThemedText type="subtitle">{totalDistance.toFixed(1)} km</ThemedText>
+            <ThemedText style={styles.statLabel}>Distance</ThemedText>
+          </ThemedView>
+        </ThemedView>
 
         {actionError ? <ThemedText style={styles.errorText}>{actionError}</ThemedText> : null}
 
@@ -229,12 +267,23 @@ const styles = StyleSheet.create({
     borderRadius: 46,
     marginBottom: 8,
   },
-  noticeCard: {
+  statCard: {
+    flex: 1,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#8f8f8f66',
     padding: 14,
-    gap: 4,
+    alignItems: 'center',
+    gap: 2,
+  },
+  statLabel: {
+    opacity: 0.75,
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
   noticeText: {
     opacity: 0.75,
