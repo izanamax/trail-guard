@@ -1,7 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { StyleSheet, Alert, Pressable, View, Text, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { StyleSheet, Alert, Pressable, View, Text, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MapView, { UrlTile, Polyline, Marker, MapPressEvent } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -22,6 +23,7 @@ export default function MapScreen() {
   const [routeName, setRouteName] = useState<string>('New Route');
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | undefined>();
+  const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -33,7 +35,28 @@ export default function MapScreen() {
     loadData();
   }, []);
 
+  const jumpToLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Location permission is required.');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      mapRef.current?.animateToRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 1000);
+    } catch (e) {
+      Alert.alert('Error', 'Could not get your location.');
+    }
+  };
+
   const handleMapPress = async (event: MapPressEvent) => {
+    Keyboard.dismiss();
     const { coordinate } = event.nativeEvent;
     
     // Create optimistic waypoint
@@ -93,9 +116,10 @@ export default function MapScreen() {
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: 43.2220, // Almaty approximate location
+          latitude: 43.2220, 
           longitude: 76.8512,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
@@ -139,11 +163,15 @@ export default function MapScreen() {
         )}
       </MapView>
 
+      <Pressable style={[styles.locationButton, { top: insets.top + 60 }]} onPress={jumpToLocation}>
+        <FontAwesome name="location-arrow" size={20} color="#333" />
+      </Pressable>
+
       <KeyboardAvoidingView 
         style={StyleSheet.absoluteFillObject}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         pointerEvents="box-none"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 80}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <View style={styles.controlsOverlay} pointerEvents="box-none">
           <View style={[styles.card, { marginBottom: 100 }]}>
@@ -302,8 +330,23 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 12,
+  },
+  locationButton: {
+    position: 'absolute',
+    right: 16,
+    backgroundColor: '#fff',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 10,
   },
   buttonPrimary: {
     flex: 2,
