@@ -9,7 +9,7 @@ import { calculateElevationGain, calculateRouteDistance } from '@/utils/route-ut
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Easing, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { MapPressEvent, Marker, Polyline } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -25,7 +25,6 @@ export default function MapScreen() {
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const mapRef = useRef<MapView>(null);
-  const keyboardLift = useRef(new Animated.Value(0)).current;
   const controlsBottomPadding = Platform.OS === 'ios' ? insets.bottom + 80 : 90;
 
   useEffect(() => {
@@ -36,32 +35,7 @@ export default function MapScreen() {
       setGearItems(items);
     }
     loadData();
-
-    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => {
-      const keyboardHeight = e.endCoordinates?.height ?? 0;
-      const targetLift = Math.max(0, keyboardHeight + 12 - controlsBottomPadding);
-
-      Animated.timing(keyboardLift, {
-        toValue: targetLift,
-        duration: e.duration ?? (Platform.OS === 'ios' ? 250 : 180),
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    });
-    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', (e) => {
-      Animated.timing(keyboardLift, {
-        toValue: 0,
-        duration: e.duration ?? (Platform.OS === 'ios' ? 250 : 180),
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [controlsBottomPadding, keyboardLift]);
+  }, []);
 
   const jumpToLocation = async () => {
     try {
@@ -216,14 +190,16 @@ export default function MapScreen() {
         )}
       </MapView>
 
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
-        <Animated.View
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={StyleSheet.absoluteFillObject} 
+        pointerEvents="box-none"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        <View
           style={[
             styles.controlsOverlay,
-            {
-              paddingBottom: controlsBottomPadding,
-              transform: [{ translateY: Animated.multiply(keyboardLift, -1) }],
-            },
+            { paddingBottom: controlsBottomPadding },
           ]}
           pointerEvents="box-none"
         >
@@ -293,8 +269,8 @@ export default function MapScreen() {
               </Pressable>
             </View>
           </View>
-        </Animated.View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </ThemedView>
   );
 }

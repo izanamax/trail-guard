@@ -221,29 +221,6 @@ export default function ProfileScreen() {
           </ThemedView>
         </ThemedView>
 
-        </ThemedView>
-
-        <ThemedView style={styles.quickActions}>
-          <Pressable
-            style={styles.quickActionButton}
-            onPress={() =>
-              router.push({
-                pathname: '/settings',
-                params: {
-                  name: userName,
-                  email: userEmail,
-                },
-              })
-            }>
-            <ThemedText type="defaultSemiBold">Settings</ThemedText>
-            <ThemedText style={styles.quickActionHint}>Change name and email</ThemedText>
-          </Pressable>
-          <Pressable style={styles.quickActionButton} onPress={() => router.push('/security')}>
-            <ThemedText type="defaultSemiBold">Security</ThemedText>
-            <ThemedText style={styles.quickActionHint}>Read safety guidance and limits</ThemedText>
-          </Pressable>
-        </ThemedView>
-
         {/* <ThemedView style={styles.noticeCard}>
           <ThemedText type="defaultSemiBold">Privacy controls</ThemedText>
           <ThemedText style={styles.noticeText}>
