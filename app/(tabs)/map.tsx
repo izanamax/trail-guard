@@ -1,18 +1,18 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { StyleSheet, Alert, Pressable, View, Text, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import MapView, { UrlTile, Polyline, Marker, MapPressEvent } from 'react-native-maps';
-import * as Location from 'expo-location';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { supabase } from '@/lib/supabase';
 import { loadGearItems } from '@/storage/gear-storage';
 import { addRoute } from '@/storage/route-storage';
 import type { GearItem } from '@/types/gear';
-import type { Waypoint, Route } from '@/types/route';
-import { calculateRouteDistance, calculateElevationGain } from '@/utils/route-utils';
-import { supabase } from '@/lib/supabase';
+import type { Route, Waypoint } from '@/types/route';
+import { calculateElevationGain, calculateRouteDistance } from '@/utils/route-utils';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as Location from 'expo-location';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import MapView, { MapPressEvent, Marker, Polyline, UrlTile } from 'react-native-maps';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
@@ -23,6 +23,7 @@ export default function MapScreen() {
   const [routeName, setRouteName] = useState<string>('New Route');
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | undefined>();
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -33,6 +34,18 @@ export default function MapScreen() {
       setGearItems(items);
     }
     loadData();
+
+    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => {
+      setKeyboardOffset(e.endCoordinates.height - 335);
+    });
+    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => {
+      setKeyboardOffset(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
   }, []);
 
   const jumpToLocation = async () => {
@@ -70,7 +83,7 @@ export default function MapScreen() {
   const handleMapPress = async (event: MapPressEvent) => {
     Keyboard.dismiss();
     const { coordinate } = event.nativeEvent;
-    
+
     // Create optimistic waypoint
     const newWaypoint: Waypoint = {
       id: Date.now().toString() + Math.random().toString(36).substring(7),
@@ -86,7 +99,7 @@ export default function MapScreen() {
       const data = await response.json();
       if (data && data.results && data.results.length > 0) {
         const elevation = data.results[0].elevation;
-        setWaypoints((prev) => 
+        setWaypoints((prev) =>
           prev.map((wp) => wp.id === newWaypoint.id ? { ...wp, elevation } : wp)
         );
       }
@@ -131,7 +144,7 @@ export default function MapScreen() {
         ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: 43.2220, 
+          latitude: 43.2220,
           longitude: 76.8512,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
@@ -147,25 +160,25 @@ export default function MapScreen() {
           const prevWp = waypoints[index - 1];
           // Simple hash-based color for gear or default red
           const gearColor = wp.gearId ? `#${Math.abs(wp.gearId.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)).toString(16).substring(0, 6)}` : '#cc5555';
-          
+
           return (
-            <Polyline 
+            <Polyline
               key={`seg-${index}`}
-              coordinates={[prevWp, wp]} 
-              strokeColor={gearColor} 
-              strokeWidth={5} 
+              coordinates={[prevWp, wp]}
+              strokeColor={gearColor}
+              strokeWidth={5}
             />
           );
         })}
         {waypoints.length > 0 && (
           <>
-            <Marker 
+            <Marker
               coordinate={waypoints[0]}
               title="Start"
               pinColor="green"
             />
             {waypoints.length > 1 && (
-              <Marker 
+              <Marker
                 coordinate={waypoints[waypoints.length - 1]}
                 title="End"
                 pinColor="blue"
@@ -179,71 +192,69 @@ export default function MapScreen() {
         <FontAwesome name="location-arrow" size={20} color="#333" />
       </Pressable>
 
-      <KeyboardAvoidingView 
-        style={styles.controlsOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-        pointerEvents="box-none"
-      >
-        <View style={styles.card}>
-          <View style={styles.nameInputContainer}>
-            <TextInput
-              style={styles.nameInput}
-              value={routeName}
-              onChangeText={setRouteName}
-              placeholder="Route Name"
-            />
-            <FontAwesome name="pencil" size={16} color="#666" style={styles.penIcon} />
-          </View>
-          <ThemedText style={styles.cardTitle}>Active Gear (for next point)</ThemedText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gearScroll}>
-            <Pressable
-              style={[styles.gearChip, activeGearId === null && styles.gearChipActive]}
-              onPress={() => setActiveGearId(null)}
-            >
-              <Text style={[styles.gearText, activeGearId === null && styles.gearTextActive]}>None</Text>
-            </Pressable>
-            {gearItems.map((gear) => (
+      <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+        <View style={[styles.controlsOverlay, { paddingBottom: 90 + keyboardOffset }]} pointerEvents="box-none">
+          <View style={styles.card}>
+            <View style={styles.nameInputContainer}>
+              <TextInput
+                style={styles.nameInput}
+                value={routeName}
+                onChangeText={setRouteName}
+                placeholder="Route Name"
+              />
+              <FontAwesome name="pencil" size={16} color="#666" style={styles.penIcon} />
+            </View>
+            <ThemedText style={styles.cardTitle}>Active Gear (for next point)</ThemedText>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gearScroll}>
               <Pressable
-                key={gear.id}
-                style={[styles.gearChip, activeGearId === gear.id && styles.gearChipActive]}
-                onPress={() => setActiveGearId(gear.id)}
+                style={[styles.gearChip, activeGearId === null && styles.gearChipActive]}
+                onPress={() => setActiveGearId(null)}
               >
-                <Text style={[styles.gearText, activeGearId === gear.id && styles.gearTextActive]}>
-                  {gear.name}
-                </Text>
+                <Text style={[styles.gearText, activeGearId === null && styles.gearTextActive]}>None</Text>
               </Pressable>
-            ))}
-          </ScrollView>
+              {gearItems.map((gear) => (
+                <Pressable
+                  key={gear.id}
+                  style={[styles.gearChip, activeGearId === gear.id && styles.gearChipActive]}
+                  onPress={() => setActiveGearId(gear.id)}
+                >
+                  <Text style={[styles.gearText, activeGearId === gear.id && styles.gearTextActive]}>
+                    {gear.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
 
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <ThemedText style={styles.statsLabel}>Points</ThemedText>
-              <ThemedText style={styles.statsValue}>{waypoints.length}</ThemedText>
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <ThemedText style={styles.statsLabel}>Points</ThemedText>
+                <ThemedText style={styles.statsValue}>{waypoints.length}</ThemedText>
+              </View>
+              <View style={styles.statItem}>
+                <ThemedText style={styles.statsLabel}>Distance</ThemedText>
+                <ThemedText style={styles.statsValue}>{calculateRouteDistance(waypoints).toFixed(2)} km</ThemedText>
+              </View>
+              <View style={styles.statItem}>
+                <ThemedText style={styles.statsLabel}>Gain</ThemedText>
+                <ThemedText style={styles.statsValue}>{calculateElevationGain(waypoints).toFixed(0)} m</ThemedText>
+              </View>
             </View>
-            <View style={styles.statItem}>
-              <ThemedText style={styles.statsLabel}>Distance</ThemedText>
-              <ThemedText style={styles.statsValue}>{calculateRouteDistance(waypoints).toFixed(2)} km</ThemedText>
-            </View>
-            <View style={styles.statItem}>
-              <ThemedText style={styles.statsLabel}>Gain</ThemedText>
-              <ThemedText style={styles.statsValue}>{calculateElevationGain(waypoints).toFixed(0)} m</ThemedText>
-            </View>
-          </View>
 
-          <View style={styles.actionRow}>
-            <Pressable style={styles.buttonSecondary} onPress={removeLastWaypoint}>
-              <Text style={styles.buttonSecondaryText}>Undo</Text>
-            </Pressable>
-            <Pressable style={styles.buttonPrimary} onPress={saveCurrentRoute} disabled={isSaving}>
-              {isSaving ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.buttonPrimaryText}>Save Route</Text>
-              )}
-            </Pressable>
+            <View style={styles.actionRow}>
+              <Pressable style={styles.buttonSecondary} onPress={removeLastWaypoint}>
+                <Text style={styles.buttonSecondaryText}>Undo</Text>
+              </Pressable>
+              <Pressable style={styles.buttonPrimary} onPress={saveCurrentRoute} disabled={isSaving}>
+                {isSaving ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.buttonPrimaryText}>Save Route</Text>
+                )}
+              </Pressable>
+            </View>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </ThemedView>
   );
 }
@@ -257,13 +268,9 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   controlsOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    flex: 1,
     justifyContent: 'flex-end',
     paddingHorizontal: 16,
-    paddingBottom: 100,
   },
   card: {
     backgroundColor: '#ffffff',

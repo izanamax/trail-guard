@@ -260,6 +260,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     marginRight: 10,
     paddingVertical: 2,
+    color: '#ffffff',
   },
   saveBtn: {
     paddingVertical: 6,
