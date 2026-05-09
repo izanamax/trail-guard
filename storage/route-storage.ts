@@ -50,3 +50,16 @@ export async function deleteRoute(id: string, userId?: string): Promise<boolean>
   await saveRoutes(nextItems, userId);
   return true;
 }
+
+export async function updateRoute(item: Route): Promise<boolean> {
+  const existing = await loadRoutes(item.userId);
+  const itemIndex = existing.findIndex((entry) => entry.id === item.id);
+
+  if (itemIndex === -1) return false;
+
+  const nextItems = [...existing];
+  nextItems[itemIndex] = item;
+
+  await saveRoutes(nextItems, item.userId);
+  return true;
+}

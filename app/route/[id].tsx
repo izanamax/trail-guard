@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import MapView, { UrlTile, Polyline, Marker } from 'react-native-maps';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { getRouteById } from '@/storage/route-storage';
+import { getRouteById, updateRoute } from '@/storage/route-storage';
 import { loadGearItems } from '@/storage/gear-storage';
 import { supabase } from '@/lib/supabase';
 import type { Route } from '@/types/route';
@@ -16,6 +16,8 @@ export default function RouteDetailScreen() {
   const [route, setRoute] = useState<Route | null>(null);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState('');
 
   useEffect(() => {
     async function fetchDetails() {
@@ -24,6 +26,7 @@ export default function RouteDetailScreen() {
       const items = await loadGearItems(data.user?.id);
       
       setRoute(routeData || null);
+      setEditName(routeData?.name || '');
       setGearItems(items);
       setLoading(false);
     }
@@ -50,6 +53,14 @@ export default function RouteDetailScreen() {
   const getGearName = (gearId?: string | null) => {
     if (!gearId) return 'None';
     return gearItems.find(g => g.id === gearId)?.name || 'Unknown Gear';
+  };
+
+  const handleSaveName = async () => {
+    if (!route || !editName.trim()) return;
+    const updatedRoute = { ...route, name: editName.trim() };
+    await updateRoute(updatedRoute);
+    setRoute(updatedRoute);
+    setIsEditingName(false);
   };
 
   const initialRegion = route.waypoints.length > 0 
@@ -92,7 +103,28 @@ export default function RouteDetailScreen() {
       </View>
 
       <ScrollView style={styles.detailsContainer}>
-        <ThemedText type="title" style={styles.title}>{route.name}</ThemedText>
+        {isEditingName ? (
+          <View style={styles.editNameRow}>
+            <TextInput
+              style={styles.editNameInput}
+              value={editName}
+              onChangeText={setEditName}
+            />
+            <Pressable style={styles.saveBtn} onPress={handleSaveName}>
+              <ThemedText style={styles.saveBtnText}>Save</ThemedText>
+            </Pressable>
+            <Pressable style={styles.cancelBtn} onPress={() => setIsEditingName(false)}>
+              <ThemedText style={styles.cancelBtnText}>Cancel</ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.nameRow}>
+            <ThemedText type="title" style={styles.title}>{route.name}</ThemedText>
+            <Pressable style={styles.editBtn} onPress={() => setIsEditingName(true)}>
+              <ThemedText style={styles.editBtnText}>Edit</ThemedText>
+            </Pressable>
+          </View>
+        )}
         <ThemedText style={styles.subtitle}>
           Date: {new Date(route.createdAt).toLocaleDateString()}
         </ThemedText>
@@ -139,7 +171,59 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   title: {
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
+    justifyContent: 'space-between',
+  },
+  editBtn: {
+    padding: 6,
+    backgroundColor: '#f2f4f7',
+    borderRadius: 6,
+    marginLeft: 10,
+  },
+  editBtnText: {
+    fontSize: 14,
+    color: '#344054',
+  },
+  editNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  editNameInput: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: 'bold',
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    marginRight: 10,
+    paddingVertical: 2,
+  },
+  saveBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#cc5555',
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  saveBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cancelBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#f2f4f7',
+    borderRadius: 6,
+  },
+  cancelBtnText: {
+    color: '#344054',
+    fontSize: 14,
   },
   subtitle: {
     fontSize: 14,
