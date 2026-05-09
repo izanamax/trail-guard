@@ -41,7 +41,10 @@ export default function RoutesScreen() {
     const date = new Date(item.createdAt).toLocaleDateString();
 
     return (
-      <View style={styles.card}>
+      <Pressable 
+        style={styles.card}
+        onPress={() => router.push({ pathname: '/route/[id]', params: { id: item.id } })}
+      >
         <View style={styles.cardHeader}>
           <ThemedText style={styles.title}>{item.name}</ThemedText>
           <ThemedText style={styles.date}>{date}</ThemedText>
@@ -51,7 +54,7 @@ export default function RoutesScreen() {
         <Pressable style={styles.deleteButton} onPress={() => handleDelete(item.id)}>
           <ThemedText style={styles.deleteText}>Delete</ThemedText>
         </Pressable>
-      </View>
+      </Pressable>
     );
   };
 
