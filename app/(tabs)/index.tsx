@@ -5,20 +5,77 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { GEAR_CATEGORIES } from '@/types/gear';
+import { GEAR_CATEGORIES, GEAR_CATEGORY_LABELS, type GearItem, type GearStatus } from '@/types/gear';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { supabase } from '@/lib/supabase';
 import { loadGearItems } from '@/storage/gear-storage';
-import type { GearItem, GearStatus } from '@/types/gear';
-import { GEAR_CATEGORY_LABELS } from '@/types/gear';
 import { calculateGearStatus } from '@/utils/gear-status';
 import { formatDate } from '@/utils/route-utils';
 import { useAccessibility } from '@/context/accessibility-context';
 
-function getStatusStyle(status: GearStatus, colors: any) {
+const lightPalette = {
+  addButtonBg: '#ffffff',
+  addButtonBorder: '#8f8f8f66',
+  addButtonText: '#11181C',
+  disclaimerText: '#7a271a',
+  disclaimerBg: '#ffe2e0',
+  disclaimerBorder: '#cc5555',
+  errorText: '#d64545',
+  searchBg: '#f2f4f7',
+  searchBorder: '#e4e7ec',
+  searchIcon: '#666666',
+  searchText: '#11181C',
+  searchPlaceholder: '#98a2b3',
+  clearIcon: '#999999',
+  emptyBg: '#ffffff',
+  emptyBorder: '#8f8f8f66',
+  cardBg: '#ffffff',
+  cardBorder: '#8f8f8f66',
+  cardPlaceholderBg: '#f8fafc',
+  cardPlaceholderBorder: '#8f8f8f66',
+  metaText: '#475467',
+  categoryChipBg: '#f2f4f7',
+  categoryChipBorder: '#e4e7ec',
+  categoryChipText: '#475467',
+  categoryChipActiveBg: '#cc5555',
+  categoryChipActiveText: '#ffffff',
+};
+
+const darkPalette = {
+  addButtonBg: '#23272b',
+  addButtonBorder: '#4a5158',
+  addButtonText: '#E8E8E8',
+  disclaimerText: '#f0c4bf',
+  disclaimerBg: '#3b2325',
+  disclaimerBorder: '#8f4b4b',
+  errorText: '#ef8f87',
+  searchBg: '#2a2f34',
+  searchBorder: '#3b4248',
+  searchIcon: '#a9b0b6',
+  searchText: '#E8E8E8',
+  searchPlaceholder: '#8f979e',
+  clearIcon: '#a9b0b6',
+  emptyBg: '#23272b',
+  emptyBorder: '#3b4248',
+  cardBg: '#23272b',
+  cardBorder: '#3b4248',
+  cardPlaceholderBg: '#1f2327',
+  cardPlaceholderBorder: '#3b4248',
+  metaText: '#b0b6bb',
+  categoryChipBg: '#2a2f34',
+  categoryChipBorder: '#3b4248',
+  categoryChipText: '#d3d8dc',
+  categoryChipActiveBg: '#cc5555',
+  categoryChipActiveText: '#E8E8E8',
+};
+
+type StatusColors = ReturnType<typeof useAccessibility>['colors'];
+
+function getStatusStyle(status: GearStatus, colors: StatusColors) {
   switch (status) {
     case 'Safe':
       return { color: colors.safe, backgroundColor: colors.safeBg };
@@ -38,6 +95,8 @@ function getStatusStyle(status: GearStatus, colors: any) {
 export default function GearListScreen() {
   const router = useRouter();
   const { colors } = useAccessibility();
+  const colorScheme = useColorScheme();
+  const palette = colorScheme === 'dark' ? darkPalette : lightPalette;
   const backgroundColor = useThemeColor({}, 'background');
   const hasLoadedOnceRef = useRef(false);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
@@ -83,27 +142,53 @@ export default function GearListScreen() {
       <ThemedView style={styles.container}>
         <ThemedView style={styles.header}>
           <ThemedText type="title">Gear List</ThemedText>
-          <Pressable style={styles.addButton} onPress={() => router.push('/add-gear')}>
-            <ThemedText type="defaultSemiBold">Add Gear</ThemedText>
+          <Pressable
+            style={[
+              styles.addButton,
+              {
+                backgroundColor: palette.addButtonBg,
+                borderColor: palette.addButtonBorder,
+              },
+            ]}
+            onPress={() => router.push('/add-gear')}>
+            <ThemedText type="defaultSemiBold" style={{ color: palette.addButtonText }}>
+              Add Gear
+            </ThemedText>
           </Pressable>
         </ThemedView>
 
-        <ThemedText style={styles.disclaimer}>
+        <ThemedText
+          style={[
+            styles.disclaimer,
+            {
+              color: palette.disclaimerText,
+              backgroundColor: palette.disclaimerBg,
+              borderColor: palette.disclaimerBorder,
+            },
+          ]}>
           The calculated status is only a reminder. Always inspect gear manually and follow
           manufacturer instructions.
         </ThemedText>
 
-        <View style={styles.searchContainer}>
-          <FontAwesome name="search" size={16} color="#666" style={styles.searchIcon} />
+        <View
+          style={[
+            styles.searchContainer,
+            {
+              backgroundColor: palette.searchBg,
+              borderColor: palette.searchBorder,
+            },
+          ]}>
+          <FontAwesome name="search" size={16} color={palette.searchIcon} style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: palette.searchText }]}
             placeholder="Search gear..."
+            placeholderTextColor={palette.searchPlaceholder}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery !== '' && (
             <Pressable onPress={() => setSearchQuery('')}>
-              <FontAwesome name="times-circle" size={16} color="#999" />
+              <FontAwesome name="times-circle" size={16} color={palette.clearIcon} />
             </Pressable>
           )}
         </View>
@@ -111,18 +196,56 @@ export default function GearListScreen() {
         <View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
             <Pressable
-              style={[styles.categoryChip, selectedCategory === null && styles.categoryChipActive]}
+              style={[
+                styles.categoryChip,
+                {
+                  backgroundColor: palette.categoryChipBg,
+                  borderColor: palette.categoryChipBorder,
+                },
+                selectedCategory === null && {
+                  backgroundColor: palette.categoryChipActiveBg,
+                  borderColor: palette.categoryChipActiveBg,
+                },
+              ]}
               onPress={() => setSelectedCategory(null)}
             >
-              <ThemedText style={[styles.categoryText, selectedCategory === null && styles.categoryTextActive]}>All</ThemedText>
+              <ThemedText
+                style={[
+                  styles.categoryText,
+                  { color: palette.categoryChipText },
+                  selectedCategory === null && {
+                    color: palette.categoryChipActiveText,
+                    fontWeight: '600',
+                  },
+                ]}>
+                All
+              </ThemedText>
             </Pressable>
             {GEAR_CATEGORIES.map((cat) => (
               <Pressable
                 key={cat}
-                style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
+                style={[
+                  styles.categoryChip,
+                  {
+                    backgroundColor: palette.categoryChipBg,
+                    borderColor: palette.categoryChipBorder,
+                  },
+                  selectedCategory === cat && {
+                    backgroundColor: palette.categoryChipActiveBg,
+                    borderColor: palette.categoryChipActiveBg,
+                  },
+                ]}
                 onPress={() => setSelectedCategory(cat)}
               >
-                <ThemedText style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>
+                <ThemedText
+                  style={[
+                    styles.categoryText,
+                    { color: palette.categoryChipText },
+                    selectedCategory === cat && {
+                      color: palette.categoryChipActiveText,
+                      fontWeight: '600',
+                    },
+                  ]}>
                   {GEAR_CATEGORY_LABELS[cat]}
                 </ThemedText>
               </Pressable>
@@ -136,14 +259,21 @@ export default function GearListScreen() {
           </ThemedView>
         ) : null}
 
-        {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
+        {error ? <ThemedText style={[styles.errorText, { color: palette.errorText }]}>{error}</ThemedText> : null}
 
         <ScrollView
           style={styles.list}
           contentContainerStyle={[styles.listContent, { paddingBottom: 80 }]}
           showsVerticalScrollIndicator={false}>
           {!isLoading && filteredItems.length === 0 ? (
-            <ThemedView style={styles.emptyState}>
+            <ThemedView
+              style={[
+                styles.emptyState,
+                {
+                  backgroundColor: palette.emptyBg,
+                  borderColor: palette.emptyBorder,
+                },
+              ]}>
               <ThemedText>
                 {gearItems.length === 0 ? "No gear yet. Add your first item." : "No gear matches your search."}
               </ThemedText>
@@ -161,32 +291,46 @@ export default function GearListScreen() {
                 key={item.id}
                 onPress={() => router.push({ pathname: '/gear/[id]', params: { id: item.id } })}
                 style={({ pressed }) => [styles.gridItem, pressed && styles.cardPressed]}>
-                <ThemedView style={styles.card}>
+                <ThemedView
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: palette.cardBg,
+                      borderColor: palette.cardBorder,
+                    },
+                  ]}>
                   {item.photoUri ? (
                     <Image source={{ uri: item.photoUri }} style={styles.cardImage} contentFit="cover" />
                   ) : (
-                    <ThemedView style={styles.cardImagePlaceholder}>
+                    <ThemedView
+                      style={[
+                        styles.cardImagePlaceholder,
+                        {
+                          backgroundColor: palette.cardPlaceholderBg,
+                          borderColor: palette.cardPlaceholderBorder,
+                        },
+                      ]}>
                       <ThemedText style={styles.cardImagePlaceholderText}>No photo</ThemedText>
                     </ThemedView>
                   )}
                   <ThemedText type="subtitle" numberOfLines={1}>
                     {item.name}
                   </ThemedText>
-                  <ThemedText style={styles.metaText} numberOfLines={1}>
+                  <ThemedText style={[styles.metaText, { color: palette.metaText }]} numberOfLines={1}>
                     {GEAR_CATEGORY_LABELS[item.category]}
                   </ThemedText>
                   {isManuallyRetired ? (
-                    <ThemedText style={styles.metaText}>
+                    <ThemedText style={[styles.metaText, { color: palette.metaText }]}>
                       Retired manually{item.retiredAt ? ` on ${formatDate(item.retiredAt)}` : ''}
                     </ThemedText>
                   ) : (
-                    <ThemedText style={styles.metaText}>Days left: {daysRemaining}</ThemedText>
+                    <ThemedText style={[styles.metaText, { color: palette.metaText }]}>
+                      Days left: {daysRemaining}
+                    </ThemedText>
                   )}
-                  <View style={[styles.statusBadge, { backgroundColor: statusStyle.backgroundColor }]}>
-                    <Text style={{ color: statusStyle.color, fontWeight: '600', fontSize: 12 }}>
-                      {result.status}
-                    </Text>
-                  </View>
+                  <ThemedText style={[styles.statusBadge, statusStyle]}>
+                    {result.status}
+                  </ThemedText>
                 </ThemedView>
               </Pressable>
             );
@@ -223,10 +367,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     opacity: 0.8,
-    color: '#7a271a',
-    backgroundColor: '#ffe2e0',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#cc5555',
     borderRadius: 8,
     padding: 10,
   },
@@ -235,7 +376,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    color: '#d64545',
   },
   list: {
     flex: 1,
@@ -300,14 +440,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
   },
-  statusManuallyRetired: {
-    color: '#475467',
-    backgroundColor: '#f2f4f7',
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f2f4f7',
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 44,
@@ -319,7 +455,6 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     fontSize: 14,
-    color: '#000',
   },
   categoryScroll: {
     gap: 8,
@@ -329,20 +464,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#f2f4f7',
     borderWidth: 1,
-    borderColor: '#e4e7ec',
-  },
-  categoryChipActive: {
-    backgroundColor: '#cc5555',
-    borderColor: '#cc5555',
   },
   categoryText: {
     fontSize: 13,
-    color: '#475467',
-  },
-  categoryTextActive: {
-    color: '#fff',
-    fontWeight: '600',
   },
 });

@@ -1,21 +1,61 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TextInput, Pressable, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, ActivityIndicator, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import MapView, { Polyline, Marker } from 'react-native-maps';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { getRouteById, updateRoute } from '@/storage/route-storage';
 import { loadGearItems } from '@/storage/gear-storage';
 import { supabase } from '@/lib/supabase';
-import type { Route, Waypoint } from '@/types/route';
+import type { Route } from '@/types/route';
 import type { GearItem } from '@/types/gear';
 import { calculateRouteDistance, calculateElevationGain, formatDate } from '@/utils/route-utils';
 
+const lightPalette = {
+  mapBorder: '#cccccc',
+  inputBorder: '#cccccc',
+  inputText: '#11181C',
+  saveButtonText: '#ffffff',
+  cancelBg: '#f2f4f7',
+  cancelText: '#344054',
+  metaText: '#666666',
+  statsBg: '#ffffff',
+  statsBorder: '#eeeeee',
+  statLabel: '#666666',
+  pointCardBg: '#f9f9f9',
+  pointCardBorder: '#eeeeee',
+  pointTitle: '#333333',
+  pointMeta: '#666666',
+  pointBody: '#333333',
+  pointCoords: '#999999',
+};
+
+const darkPalette = {
+  mapBorder: '#3b4248',
+  inputBorder: '#565d63',
+  inputText: '#E8E8E8',
+  saveButtonText: '#E8E8E8',
+  cancelBg: '#2a2f34',
+  cancelText: '#E8E8E8',
+  metaText: '#a9b0b6',
+  statsBg: '#23272b',
+  statsBorder: '#3b4248',
+  statLabel: '#a9b0b6',
+  pointCardBg: '#202428',
+  pointCardBorder: '#373e44',
+  pointTitle: '#E8E8E8',
+  pointMeta: '#b0b6bb',
+  pointBody: '#E8E8E8',
+  pointCoords: '#90979d',
+};
+
 export default function RouteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const useCustomTiles = Platform.OS !== 'ios';
+  const colorScheme = useColorScheme();
+  const palette = colorScheme === 'dark' ? darkPalette : lightPalette;
   const [route, setRoute] = useState<Route | null>(null);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +135,7 @@ export default function RouteDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.mapContainer}>
+      <View style={[styles.mapContainer, { borderColor: palette.mapBorder }]}>
         {initialRegion ? (
           <MapView 
             ref={mapRef}
@@ -142,42 +182,69 @@ export default function RouteDetailScreen() {
         {isEditingName ? (
           <View style={styles.editNameRow}>
             <TextInput
-              style={styles.editNameInput}
+              style={[
+                styles.editNameInput,
+                {
+                  borderColor: palette.inputBorder,
+                  color: palette.inputText,
+                },
+              ]}
               value={editName}
               onChangeText={setEditName}
             />
             <Pressable style={styles.saveBtn} onPress={handleSaveName}>
-              <ThemedText style={styles.saveBtnText}>Save</ThemedText>
+              <ThemedText style={[styles.saveBtnText, { color: palette.saveButtonText }]}>
+                Save
+              </ThemedText>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => setIsEditingName(false)}>
-              <ThemedText style={styles.cancelBtnText}>Cancel</ThemedText>
+            <Pressable
+              style={[styles.cancelBtn, { backgroundColor: palette.cancelBg }]}
+              onPress={() => setIsEditingName(false)}>
+              <ThemedText style={[styles.cancelBtnText, { color: palette.cancelText }]}>
+                Cancel
+              </ThemedText>
             </Pressable>
           </View>
         ) : (
           <View style={styles.nameRow}>
             <ThemedText type="title" style={styles.title}>{route.name}</ThemedText>
-            <ThemedText style={styles.date}>{formatDate(route.createdAt)}</ThemedText>
+            <ThemedText style={[styles.date, { color: palette.metaText }]}>
+              {formatDate(route.createdAt)}
+            </ThemedText>
             <Pressable style={styles.editBtn} onPress={() => setIsEditingName(true)}>
               <FontAwesome name="pencil" size={18} color="#cc5555" />
             </Pressable>
           </View>
         )}
-        <ThemedText style={styles.subtitle}>
+        <ThemedText style={[styles.subtitle, { color: palette.metaText }]}>
           Date: {formatDate(route.createdAt)}
         </ThemedText>
 
-        <View style={styles.statsRow}>
+        <View
+          style={[
+            styles.statsRow,
+            {
+              backgroundColor: palette.statsBg,
+              borderColor: palette.statsBorder,
+            },
+          ]}>
           <View style={styles.statBox}>
             <ThemedText style={styles.statValue}>{calculateRouteDistance(route.waypoints).toFixed(2)} km</ThemedText>
-            <ThemedText style={styles.statLabel}>Distance</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: palette.statLabel }]}>
+              Distance
+            </ThemedText>
           </View>
           <View style={styles.statBox}>
             <ThemedText style={styles.statValue}>{calculateElevationGain(route.waypoints).toFixed(0)} m</ThemedText>
-            <ThemedText style={styles.statLabel}>Elev Gain</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: palette.statLabel }]}>
+              Elev Gain
+            </ThemedText>
           </View>
           <View style={styles.statBox}>
             <ThemedText style={styles.statValue}>{route.waypoints.length}</ThemedText>
-            <ThemedText style={styles.statLabel}>Points</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: palette.statLabel }]}>
+              Points
+            </ThemedText>
           </View>
         </View>
 
@@ -185,7 +252,13 @@ export default function RouteDetailScreen() {
         {route.waypoints.map((wp, index) => (
           <Pressable 
             key={wp.id} 
-            style={styles.pointCard}
+            style={[
+              styles.pointCard,
+              {
+                backgroundColor: palette.pointCardBg,
+                borderColor: palette.pointCardBorder,
+              },
+            ]}
             onPress={() => focusPoint(wp)}
             onLayout={(e) => {
               const { y } = e.nativeEvent.layout;
@@ -193,14 +266,20 @@ export default function RouteDetailScreen() {
             }}
           >
             <View style={styles.pointHeader}>
-              <ThemedText style={styles.pointTitle}>Point {index + 1}</ThemedText>
-              <ThemedText style={styles.pointElev}>Elev: {wp.elevation ? `${wp.elevation}m` : 'N/A'}</ThemedText>
+              <ThemedText style={[styles.pointTitle, { color: palette.pointTitle }]}>
+                Point {index + 1}
+              </ThemedText>
+              <ThemedText style={[styles.pointElev, { color: palette.pointMeta }]}>
+                Elev: {wp.elevation ? `${wp.elevation}m` : 'N/A'}
+              </ThemedText>
             </View>
             <View style={styles.gearRow}>
               <View style={[styles.gearColorBar, { backgroundColor: wp.gearId ? `#${Math.abs(wp.gearId.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)).toString(16).substring(0, 6)}` : '#cc5555' }]} />
-              <ThemedText style={styles.pointGear}>Active Gear: {getGearName(wp.gearId)}</ThemedText>
+              <ThemedText style={[styles.pointGear, { color: palette.pointBody }]}>
+                Active Gear: {getGearName(wp.gearId)}
+              </ThemedText>
             </View>
-            <ThemedText style={styles.pointCoords}>
+            <ThemedText style={[styles.pointCoords, { color: palette.pointCoords }]}>
               {wp.latitude.toFixed(5)}, {wp.longitude.toFixed(5)}
             </ThemedText>
           </Pressable>
@@ -223,7 +302,6 @@ const styles = StyleSheet.create({
     height: '40%',
     width: '100%',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ccc',
   },
   map: {
     width: '100%',
@@ -256,10 +334,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     borderBottomWidth: 1,
-    borderColor: '#ccc',
     marginRight: 10,
     paddingVertical: 2,
-    color: '#ffffff',
   },
   saveBtn: {
     paddingVertical: 6,
@@ -276,16 +352,11 @@ const styles = StyleSheet.create({
   cancelBtn: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: '#f2f4f7',
     borderRadius: 6,
   },
-  cancelBtnText: {
-    color: '#344054',
-    fontSize: 14,
-  },
+  cancelBtnText: { fontSize: 14 },
   subtitle: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 20,
   },
   sectionTitle: {
@@ -295,12 +366,10 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -318,34 +387,24 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
     marginTop: 2,
   },
   pointCard: {
-    backgroundColor: '#f9f9f9',
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
   },
   pointHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
   },
-  pointTitle: {
-    fontWeight: '600',
-    color: '#333',
-  },
+  pointTitle: { fontWeight: '600' },
   pointElev: {
-    color: '#666',
     fontSize: 12,
   },
-  pointGear: {
-    color: '#333',
-    fontWeight: '500',
-  },
+  pointGear: { fontWeight: '500' },
   gearRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -357,8 +416,5 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
   },
-  pointCoords: {
-    fontSize: 12,
-    color: '#999',
-  },
+  pointCoords: { fontSize: 12 },
 });
