@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, FlatList, Pressable, View } from 'react-native';
+import { Alert, StyleSheet, FlatList, Pressable, View, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { TextInput } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { loadGearItems } from '@/storage/gear-storage';
 import { GearItem } from '@/types/gear';
@@ -13,6 +12,7 @@ import { ThemedView } from '@/components/themed-view';
 import { loadRoutes, deleteRoute } from '@/storage/route-storage';
 import type { Route } from '@/types/route';
 import { supabase } from '@/lib/supabase';
+import { exportRouteAsGpx } from '@/utils/gpx';
 import { formatDate } from '@/utils/route-utils';
 
 export default function RoutesScreen() {
@@ -26,6 +26,7 @@ export default function RoutesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGearId, setSelectedGearId] = useState<string | null>(params.gearId || null);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [exportingRouteId, setExportingRouteId] = useState<string | null>(null);
 
   // Sync param to state when it changes
   React.useEffect(() => {
@@ -61,6 +62,21 @@ export default function RoutesScreen() {
     fetchRoutes();
   };
 
+  const handleExport = async (route: Route) => {
+    if (exportingRouteId) return;
+
+    setExportingRouteId(route.id);
+
+    try {
+      await exportRouteAsGpx(route);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to export route as GPX.';
+      Alert.alert('Export failed', message);
+    } finally {
+      setExportingRouteId(null);
+    }
+  };
+
   const filteredRoutes = routes.filter(route => {
     const matchesSearch = route.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesGear = !selectedGearId || route.waypoints.some(wp => wp.gearId === selectedGearId);
@@ -81,10 +97,36 @@ export default function RoutesScreen() {
           <ThemedText style={styles.date}>{date}</ThemedText>
         </View>
         <ThemedText style={styles.subtitle}>Points: {pointCount}</ThemedText>
-        
-        <Pressable style={styles.deleteButton} onPress={() => handleDelete(item.id)}>
-          <ThemedText style={styles.deleteText}>Delete</ThemedText>
-        </Pressable>
+
+        <View style={styles.actionsRow}>
+          <Pressable
+            style={[
+              styles.exportButton,
+              (pointCount === 0 || exportingRouteId !== null) && styles.actionButtonDisabled,
+            ]}
+            onPress={(event) => {
+              event.stopPropagation();
+              void handleExport(item);
+            }}
+            disabled={pointCount === 0 || exportingRouteId !== null}>
+            <ThemedText style={styles.exportText}>
+              {exportingRouteId === item.id ? 'Exporting...' : 'Export GPX'}
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.deleteButton,
+              exportingRouteId === item.id && styles.actionButtonDisabled,
+            ]}
+            onPress={(event) => {
+              event.stopPropagation();
+              void handleDelete(item.id);
+            }}
+            disabled={exportingRouteId === item.id}>
+            <ThemedText style={styles.deleteText}>Delete</ThemedText>
+          </Pressable>
+        </View>
       </Pressable>
     );
   };
@@ -194,7 +236,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   deleteButton: {
-    alignSelf: 'flex-end',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -281,5 +322,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#666',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  exportButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#ecfdf3',
+  },
+  exportText: {
+    color: '#027a48',
+    fontWeight: '500',
+  },
+  actionButtonDisabled: {
+    opacity: 0.6,
   },
 });

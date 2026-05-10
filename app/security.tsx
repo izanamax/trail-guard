@@ -55,7 +55,7 @@ export default function SecurityScreen() {
             <ThemedText type="defaultSemiBold">Privacy defaults</ThemedText>
             <ThemedText style={styles.cardText}>
               Gear records are private by default. You can permanently remove account data from
-              Profile.
+              Settings.
             </ThemedText>
           </ThemedView>
         </ScrollView>

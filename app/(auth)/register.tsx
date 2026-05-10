@@ -1,10 +1,12 @@
-import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import {
+  AuthMessage,
+  AuthScreen,
+  AuthSubmitButton,
+  AuthTextField,
+} from '@/components/auth/auth-ui';
 import { supabase } from '@/lib/supabase';
 
 export default function RegisterScreen() {
@@ -16,6 +18,8 @@ export default function RegisterScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async () => {
+    if (isLoading) return;
+
     setError('');
     setMessage('');
     setIsLoading(true);
@@ -50,107 +54,62 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">Create account</ThemedText>
-        <ThemedText style={styles.subtitle}>Register with email and password.</ThemedText>
-
-        <ThemedView style={styles.form}>
-          <TextInput
-            autoCapitalize="words"
-            autoCorrect={false}
-            placeholder="Name"
-            placeholderTextColor="#9a9a9a"
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-          />
-          <TextInput
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            placeholder="Email"
-            placeholderTextColor="#9a9a9a"
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-          />
-          <TextInput
-            secureTextEntry
-            placeholder="Password (min 6)"
-            placeholderTextColor="#9a9a9a"
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-          />
-          {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
-          {message ? <ThemedText style={styles.messageText}>{message}</ThemedText> : null}
-          <Pressable style={[styles.button, isLoading && styles.buttonDisabled]} onPress={handleRegister} disabled={isLoading}>
-            <ThemedText type="defaultSemiBold">{isLoading ? 'Creating...' : 'Register'}</ThemedText>
-          </Pressable>
-        </ThemedView>
-
-        <ThemedView style={styles.footer}>
-          <ThemedText>Already have an account?</ThemedText>
-          <Link href="/(auth)/login" asChild>
-            <Pressable>
-              <ThemedText type="link">Login</ThemedText>
-            </Pressable>
-          </Link>
-        </ThemedView>
-      </ThemedView>
-    </SafeAreaView>
+    <AuthScreen
+      title="Create account"
+      subtitle="Register with email and password."
+      footerPrompt="Already have an account?"
+      footerLinkLabel="Login"
+      footerHref="/(auth)/login">
+      <View style={styles.form}>
+        <AuthTextField
+          autoCapitalize="words"
+          autoComplete="name"
+          autoCorrect={false}
+          placeholder="Name"
+          textContentType="name"
+          returnKeyType="next"
+          value={name}
+          onChangeText={setName}
+        />
+        <AuthTextField
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          keyboardType="email-address"
+          placeholder="Email"
+          textContentType="emailAddress"
+          returnKeyType="next"
+          value={email}
+          onChangeText={setEmail}
+        />
+        <AuthTextField
+          autoCapitalize="none"
+          autoComplete="new-password"
+          autoCorrect={false}
+          secureTextEntry
+          placeholder="Password (min 6)"
+          textContentType="newPassword"
+          returnKeyType="done"
+          value={password}
+          onChangeText={setPassword}
+          onSubmitEditing={() => {
+            void handleRegister();
+          }}
+        />
+        {error ? <AuthMessage tone="error">{error}</AuthMessage> : null}
+        {message ? <AuthMessage tone="success">{message}</AuthMessage> : null}
+        <AuthSubmitButton
+          label={isLoading ? 'Creating...' : 'Register'}
+          onPress={handleRegister}
+          disabled={isLoading}
+        />
+      </View>
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    gap: 12,
-  },
-  subtitle: {
-    opacity: 0.7,
-  },
   form: {
-    marginTop: 16,
     gap: 12,
-  },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8f8f8f66',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#111',
-    backgroundColor: '#fff',
-  },
-  button: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8f8f8f66',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  errorText: {
-    color: '#d64545',
-  },
-  messageText: {
-    color: '#0e7a3c',
-  },
-  footer: {
-    marginTop: 8,
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
   },
 });
