@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TextInput, Pressable, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, ActivityIndicator, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import MapView, { Polyline, Marker } from 'react-native-maps';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -10,7 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { getRouteById, updateRoute } from '@/storage/route-storage';
 import { loadGearItems } from '@/storage/gear-storage';
 import { supabase } from '@/lib/supabase';
-import type { Route, Waypoint } from '@/types/route';
+import type { Route } from '@/types/route';
 import type { GearItem } from '@/types/gear';
 import { calculateRouteDistance, calculateElevationGain, formatDate } from '@/utils/route-utils';
 
@@ -54,7 +54,6 @@ const darkPalette = {
 
 export default function RouteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const useCustomTiles = Platform.OS !== 'ios';
   const colorScheme = useColorScheme();
   const palette = colorScheme === 'dark' ? darkPalette : lightPalette;
   const [route, setRoute] = useState<Route | null>(null);
