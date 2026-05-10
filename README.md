@@ -9,6 +9,7 @@ Core hypothesis: if users can quickly add gear and immediately see lifecycle sta
 ### Included
 - Auth (register/login via Supabase).
 - End-to-end workflow: `Add Gear -> Status Calculation -> Gear List/Details`.
+- Route export to GPX.
 - Category-based retirement calculation (rope/harness/helmet/boots).
 - Status outputs: `Safe`, `Warning`, `Retire Soon`, `Expired`, `Manually Retired`.
 - Manual retirement controls (`Retire Now`, `Undo Retirement`).
@@ -16,7 +17,7 @@ Core hypothesis: if users can quickly add gear and immediately see lifecycle sta
 - Account erasure flow: `Delete Account & All Data`.
 
 ### Not Included
-- GPS tracking, GPX import/export, maps, elevation charts, weather.
+- GPS tracking, GPX import, maps, elevation charts, weather.
 - Social sharing/discovery features.
 - Professional certification logic.
 
@@ -69,7 +70,7 @@ Required server secrets:
 - Manual retirement is supported even before calculated expiration.
 - Category rules are estimates and intentionally documented as non-certification logic.
 - Gear data is private by default.
-- Full erasure flow is implemented in Profile via `Delete Account & All Data`.
+- Full erasure flow is implemented in Settings via `Delete Account & All Data`.
 
 ## Assignment Alignment
 
