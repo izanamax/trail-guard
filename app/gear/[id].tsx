@@ -269,9 +269,9 @@ export default function GearDetailsScreen() {
               <ThemedText>Days Remaining: {daysRemaining}</ThemedText>
               {statusStyle && (
                 <View style={[styles.statusBadge, { backgroundColor: statusStyle.backgroundColor }]}>
-                  <Text style={{ color: statusStyle.color, fontWeight: '600' }}>
+                  <ThemedText style={{ color: statusStyle.color, fontWeight: '600' }}>
                     Status: {statusResult?.status}
-                  </Text>
+                  </ThemedText>
                 </View>
               )}
               <ThemedText style={styles.safetyNote}>
