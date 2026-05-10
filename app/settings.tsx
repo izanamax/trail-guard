@@ -34,16 +34,16 @@ const darkPalette = {
   sectionBorder: '#434a51',
   inputBg: '#23292d',
   inputBorder: '#4a535b',
-  inputText: '#ECEDEE',
+  inputText: '#E8E8E8',
   placeholder: '#8e979d',
-  helperText: '#a0a7ad',
-  errorText: '#ff9b96',
-  successText: '#7ed7a1',
+  helperText: '#98a0a6',
+  errorText: '#eb938f',
+  successText: '#76c897',
   dangerBg: '#2c1f20',
   dangerBorder: '#704646',
-  destructiveBorder: '#a45d5d',
+  destructiveBorder: '#996061',
   destructiveBg: '#402829',
-  destructiveText: '#ffb7b0',
+  destructiveText: '#e6a9a2',
 };
 
 export default function SettingsScreen() {

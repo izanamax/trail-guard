@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
 import { loadGearItems } from '@/storage/gear-storage';
 import { addRoute } from '@/storage/route-storage';
@@ -13,9 +14,60 @@ import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Platform, Pre
 import MapView, { MapPressEvent, Marker, Polyline } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const lightPalette = {
+  cardBg: '#ffffff',
+  cardBorder: '#e4e7ec',
+  locationButtonBg: '#ffffff',
+  locationButtonBorder: '#d0d5dd',
+  locationIcon: '#333333',
+  inputBorder: '#cccccc',
+  inputText: '#11181C',
+  inputPlaceholder: '#98a2b3',
+  inputIcon: '#666666',
+  cardTitle: '#333333',
+  chipBg: '#f0f0f0',
+  chipBorder: '#e4e7ec',
+  chipText: '#555555',
+  chipActiveBg: '#cc5555',
+  chipActiveText: '#ffffff',
+  statsBg: '#f8f9fa',
+  statsBorder: '#e4e7ec',
+  statsLabel: '#666666',
+  secondaryBg: '#f2f4f7',
+  secondaryBorder: '#e4e7ec',
+  secondaryText: '#344054',
+  primaryText: '#ffffff',
+};
+
+const darkPalette = {
+  cardBg: '#23272b',
+  cardBorder: '#3b4248',
+  locationButtonBg: '#2a2f34',
+  locationButtonBorder: '#3b4248',
+  locationIcon: '#E8E8E8',
+  inputBorder: '#565d63',
+  inputText: '#E8E8E8',
+  inputPlaceholder: '#8f979e',
+  inputIcon: '#a9b0b6',
+  cardTitle: '#E8E8E8',
+  chipBg: '#2c3136',
+  chipBorder: '#3b4248',
+  chipText: '#cfd5da',
+  chipActiveBg: '#cc5555',
+  chipActiveText: '#E8E8E8',
+  statsBg: '#202428',
+  statsBorder: '#373e44',
+  statsLabel: '#a9b0b6',
+  secondaryBg: '#2a2f34',
+  secondaryBorder: '#3b4248',
+  secondaryText: '#E8E8E8',
+  primaryText: '#E8E8E8',
+};
+
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
-  const useCustomTiles = Platform.OS !== 'ios';
+  const colorScheme = useColorScheme();
+  const palette = colorScheme === 'dark' ? darkPalette : lightPalette;
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [activeGearId, setActiveGearId] = useState<string | null>(null);
@@ -203,68 +255,141 @@ export default function MapScreen() {
           ]}
           pointerEvents="box-none"
         >
-          <Pressable style={styles.locationButton} onPress={jumpToLocation} disabled={isLocating}>
+          <Pressable
+            style={[
+              styles.locationButton,
+              {
+                backgroundColor: palette.locationButtonBg,
+                borderColor: palette.locationButtonBorder,
+              },
+            ]}
+            onPress={jumpToLocation}
+            disabled={isLocating}>
             {isLocating ? (
-              <ActivityIndicator size="small" color="#333" />
+              <ActivityIndicator size="small" color={palette.locationIcon} />
             ) : (
-              <FontAwesome name="location-arrow" size={20} color="#333" />
+              <FontAwesome name="location-arrow" size={20} color={palette.locationIcon} />
             )}
           </Pressable>
-          <View style={styles.card}>
-            <View style={styles.nameInputContainer}>
+          <View
+            style={[
+              styles.card,
+              {
+                backgroundColor: palette.cardBg,
+                borderColor: palette.cardBorder,
+                shadowOpacity: colorScheme === 'dark' ? 0 : 0.1,
+              },
+            ]}>
+            <View style={[styles.nameInputContainer, { borderColor: palette.inputBorder }]}>
               <TextInput
-                style={styles.nameInput}
+                style={[styles.nameInput, { color: palette.inputText }]}
                 value={routeName}
                 onChangeText={setRouteName}
                 placeholder="Route Name"
+                placeholderTextColor={palette.inputPlaceholder}
               />
-              <FontAwesome name="pencil" size={16} color="#666" style={styles.penIcon} />
+              <FontAwesome name="pencil" size={16} color={palette.inputIcon} style={styles.penIcon} />
             </View>
-            <ThemedText style={styles.cardTitle}>Active Gear (for next point)</ThemedText>
+            <ThemedText style={[styles.cardTitle, { color: palette.cardTitle }]}>
+              Active Gear (for next point)
+            </ThemedText>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gearScroll}>
               <Pressable
-                style={[styles.gearChip, activeGearId === null && styles.gearChipActive]}
+                style={[
+                  styles.gearChip,
+                  {
+                    backgroundColor: palette.chipBg,
+                    borderColor: palette.chipBorder,
+                  },
+                  activeGearId === null && {
+                    backgroundColor: palette.chipActiveBg,
+                    borderColor: palette.chipActiveBg,
+                  },
+                ]}
                 onPress={() => setActiveGearId(null)}
               >
-                <Text style={[styles.gearText, activeGearId === null && styles.gearTextActive]}>None</Text>
+                <Text
+                  style={[
+                    styles.gearText,
+                    { color: palette.chipText },
+                    activeGearId === null && {
+                      color: palette.chipActiveText,
+                      fontWeight: '600',
+                    },
+                  ]}>
+                  None
+                </Text>
               </Pressable>
               {gearItems.map((gear) => (
                 <Pressable
                   key={gear.id}
-                  style={[styles.gearChip, activeGearId === gear.id && styles.gearChipActive]}
+                  style={[
+                    styles.gearChip,
+                    {
+                      backgroundColor: palette.chipBg,
+                      borderColor: palette.chipBorder,
+                    },
+                    activeGearId === gear.id && {
+                      backgroundColor: palette.chipActiveBg,
+                      borderColor: palette.chipActiveBg,
+                    },
+                  ]}
                   onPress={() => setActiveGearId(gear.id)}
                 >
-                  <Text style={[styles.gearText, activeGearId === gear.id && styles.gearTextActive]}>
+                  <Text
+                    style={[
+                      styles.gearText,
+                      { color: palette.chipText },
+                      activeGearId === gear.id && {
+                        color: palette.chipActiveText,
+                        fontWeight: '600',
+                      },
+                    ]}>
                     {gear.name}
                   </Text>
                 </Pressable>
               ))}
             </ScrollView>
 
-            <View style={styles.statsRow}>
+            <View
+              style={[
+                styles.statsRow,
+                {
+                  backgroundColor: palette.statsBg,
+                  borderColor: palette.statsBorder,
+                },
+              ]}>
               <View style={styles.statItem}>
-                <ThemedText style={styles.statsLabel}>Points</ThemedText>
+                <ThemedText style={[styles.statsLabel, { color: palette.statsLabel }]}>Points</ThemedText>
                 <ThemedText style={styles.statsValue}>{waypoints.length}</ThemedText>
               </View>
               <View style={styles.statItem}>
-                <ThemedText style={styles.statsLabel}>Distance</ThemedText>
+                <ThemedText style={[styles.statsLabel, { color: palette.statsLabel }]}>Distance</ThemedText>
                 <ThemedText style={styles.statsValue}>{calculateRouteDistance(waypoints).toFixed(2)} km</ThemedText>
               </View>
               <View style={styles.statItem}>
-                <ThemedText style={styles.statsLabel}>Gain</ThemedText>
+                <ThemedText style={[styles.statsLabel, { color: palette.statsLabel }]}>Gain</ThemedText>
                 <ThemedText style={styles.statsValue}>{calculateElevationGain(waypoints).toFixed(0)} m</ThemedText>
               </View>
             </View>
 
             <View style={styles.actionRow}>
-              <Pressable style={styles.buttonSecondary} onPress={removeLastWaypoint}>
-                <Text style={styles.buttonSecondaryText}>Undo</Text>
+              <Pressable
+                style={[
+                  styles.buttonSecondary,
+                  {
+                    backgroundColor: palette.secondaryBg,
+                    borderColor: palette.secondaryBorder,
+                  },
+                ]}
+                onPress={removeLastWaypoint}>
+                <Text style={[styles.buttonSecondaryText, { color: palette.secondaryText }]}>Undo</Text>
               </Pressable>
               <Pressable style={styles.buttonPrimary} onPress={saveCurrentRoute} disabled={isSaving}>
                 {isSaving ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator color={palette.primaryText} size="small" />
                 ) : (
-                  <Text style={styles.buttonPrimaryText}>Save Route</Text>
+                  <Text style={[styles.buttonPrimaryText, { color: palette.primaryText }]}>Save Route</Text>
                 )}
               </Pressable>
             </View>
@@ -289,9 +414,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   card: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 16,
+    borderWidth: StyleSheet.hairlineWidth,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -329,27 +454,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    borderWidth: StyleSheet.hairlineWidth,
     marginRight: 8,
-  },
-  gearChipActive: {
-    backgroundColor: '#cc5555',
   },
   gearText: {
     fontSize: 14,
-    color: '#555',
-  },
-  gearTextActive: {
-    color: '#fff',
-    fontWeight: '600',
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
-    backgroundColor: '#f8f9fa',
     padding: 10,
     borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   statItem: {
     alignItems: 'center',
@@ -371,10 +488,10 @@ const styles = StyleSheet.create({
   locationButton: {
     alignSelf: 'flex-end',
     marginBottom: 10,
-    backgroundColor: '#fff',
     width: 44,
     height: 44,
     borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -392,20 +509,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonPrimaryText: {
-    color: '#fff',
     fontWeight: '600',
     fontSize: 16,
   },
   buttonSecondary: {
     flex: 1,
-    backgroundColor: '#f2f4f7',
     paddingVertical: 14,
     borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonSecondaryText: {
-    color: '#344054',
     fontWeight: '600',
     fontSize: 16,
   },
