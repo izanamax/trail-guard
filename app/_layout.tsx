@@ -9,6 +9,8 @@ import type { Session } from '@supabase/supabase-js';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { cacheProfileFromUser, clearCachedProfile } from '@/lib/profile-cache';
 import { supabase } from '@/lib/supabase';
+import { OnboardingProvider } from '@/context/onboarding-context';
+import { AccessibilityProvider } from '@/context/accessibility-context';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -87,57 +89,61 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="add-gear"
-          options={{
-            title: 'Add Gear',
-            headerBackTitle: 'Back',
-            headerTransparent: false,
-            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
-          }}
-        />
-        <Stack.Screen
-          name="gear/[id]"
-          options={{
-            title: 'Gear Details',
-            headerBackTitle: 'Back',
-            headerTransparent: false,
-            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
-          }}
-        />
-        <Stack.Screen
-          name="route/[id]"
-          options={{
-            title: 'Route Details',
-            headerBackTitle: 'Back',
-            headerTransparent: false,
-            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
-          }}
-        />
-        <Stack.Screen
-          name="settings"
-          options={{
-            title: 'Settings',
-            headerBackTitle: 'Back',
-            headerTransparent: false,
-            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
-          }}
-        />
-        <Stack.Screen
-          name="security"
-          options={{
-            title: 'Security',
-            headerBackTitle: 'Back',
-            headerTransparent: false,
-            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
-          }}
-        />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
+      <OnboardingProvider>
+        <AccessibilityProvider>
+          <Stack>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="add-gear"
+              options={{
+                title: 'Add Gear',
+                headerBackTitle: 'Back',
+                headerTransparent: false,
+                headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
+              }}
+            />
+            <Stack.Screen
+              name="gear/[id]"
+              options={{
+                title: 'Gear Details',
+                headerBackTitle: 'Back',
+                headerTransparent: false,
+                headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
+              }}
+            />
+            <Stack.Screen
+              name="route/[id]"
+              options={{
+                title: 'Route Details',
+                headerBackTitle: 'Back',
+                headerTransparent: false,
+                headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
+              }}
+            />
+            <Stack.Screen
+              name="settings"
+              options={{
+                title: 'Settings',
+                headerBackTitle: 'Back',
+                headerTransparent: false,
+                headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
+              }}
+            />
+            <Stack.Screen
+              name="security"
+              options={{
+                title: 'Security',
+                headerBackTitle: 'Back',
+                headerTransparent: false,
+                headerStyle: { backgroundColor: colorScheme === 'dark' ? '#151718' : '#fff' },
+              }}
+            />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          </Stack>
+          <StatusBar style="auto" />
+        </AccessibilityProvider>
+      </OnboardingProvider>
     </ThemeProvider>
   );
 }

@@ -15,26 +15,28 @@ import { calculateGearStatus } from '@/utils/gear-status';
 import { loadRoutes } from '@/storage/route-storage';
 import { calculateRouteDistance, formatDate } from '@/utils/route-utils';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useAccessibility } from '@/context/accessibility-context';
 
-function getStatusStyle(status: GearStatus) {
+function getStatusStyle(status: GearStatus, colors: any) {
   switch (status) {
     case 'Safe':
-      return styles.statusSafe;
+      return { color: colors.safe, backgroundColor: colors.safeBg };
     case 'Warning':
-      return styles.statusWarning;
+      return { color: colors.warning, backgroundColor: colors.warningBg };
     case 'Retire Soon':
-      return styles.statusRetireSoon;
+      return { color: colors.retireSoon, backgroundColor: colors.retireSoonBg };
     case 'Expired':
-      return styles.statusExpired;
+      return { color: colors.expired, backgroundColor: colors.expiredBg };
     case 'Manually Retired':
-      return styles.statusManuallyRetired;
+      return { color: colors.manuallyRetired, backgroundColor: colors.manuallyRetiredBg };
     default:
-      return styles.statusSafe;
+      return { color: colors.safe, backgroundColor: colors.safeBg };
   }
 }
 
 export default function GearDetailsScreen() {
   const router = useRouter();
+  const { colors } = useAccessibility();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const backgroundColor = useThemeColor({}, 'background');
   const gearId = useMemo(() => {
@@ -212,6 +214,7 @@ export default function GearDetailsScreen() {
   };
 
   const statusResult = gearItem ? calculateGearStatus(gearItem) : null;
+  const statusStyle = statusResult ? getStatusStyle(statusResult.status, colors) : null;
   const daysRemaining = statusResult ? Math.max(0, statusResult.daysRemaining) : 0;
   const isManuallyRetired = statusResult?.status === 'Manually Retired';
 
@@ -264,9 +267,13 @@ export default function GearDetailsScreen() {
               {gearItem.retirementNote ? <ThemedText>Retirement Note: {gearItem.retirementNote}</ThemedText> : null}
               <ThemedText>Lifespan Used: {statusResult.percentageUsed}%</ThemedText>
               <ThemedText>Days Remaining: {daysRemaining}</ThemedText>
-              <ThemedText style={[styles.statusBadge, getStatusStyle(statusResult.status)]}>
-                Status: {statusResult.status}
-              </ThemedText>
+              {statusStyle && (
+                <View style={[styles.statusBadge, { backgroundColor: statusStyle.backgroundColor }]}>
+                  <Text style={{ color: statusStyle.color, fontWeight: '600' }}>
+                    Status: {statusResult?.status}
+                  </Text>
+                </View>
+              )}
               <ThemedText style={styles.safetyNote}>
                 Inspect before every use. Follow manufacturer instructions.
               </ThemedText>
@@ -398,22 +405,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     opacity: 0.82,
-  },
-  statusSafe: {
-    color: '#1c7c41',
-    backgroundColor: '#e9f8ef',
-  },
-  statusWarning: {
-    color: '#8a5a00',
-    backgroundColor: '#fff4d9',
-  },
-  statusRetireSoon: {
-    color: '#a15a00',
-    backgroundColor: '#ffe9d4',
-  },
-  statusExpired: {
-    color: '#b42318',
-    backgroundColor: '#ffe2e0',
   },
   statusManuallyRetired: {
     color: '#475467',

@@ -1,14 +1,16 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { cacheProfileFromUser } from '@/lib/profile-cache';
 import { supabase } from '@/lib/supabase';
+import { useAccessibility } from '@/context/accessibility-context';
 
 export default function SettingsScreen() {
+  const { isColorblindMode, setColorblindMode } = useAccessibility();
   const params = useLocalSearchParams<{ name?: string; email?: string }>();
   const prefilledName = typeof params.name === 'string' ? params.name : '';
   const prefilledEmail = typeof params.email === 'string' ? params.email : '';
@@ -175,6 +177,24 @@ export default function SettingsScreen() {
               editable={!isSaving}
             />
 
+            <ThemedView style={styles.divider} />
+
+            <ThemedText type="defaultSemiBold">Accessibility</ThemedText>
+            <ThemedView style={styles.settingRow}>
+              <ThemedView style={styles.settingTextContainer}>
+                <ThemedText>Colorblind Mode</ThemedText>
+                <ThemedText style={styles.settingDescription}>
+                  {isColorblindMode ? 'Status: ACTIVE (Purple Palette)' : 'Status: INACTIVE (Standard Palette)'}
+                </ThemedText>
+              </ThemedView>
+              <Switch
+                value={isColorblindMode}
+                onValueChange={setColorblindMode}
+                trackColor={{ false: '#767577', true: '#cc5555' }}
+                thumbColor={isColorblindMode ? '#fff' : '#f4f3f4'}
+              />
+            </ThemedView>
+
             {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
             {message ? <ThemedText style={styles.messageText}>{message}</ThemedText> : null}
 
@@ -232,6 +252,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#8f8f8f33',
+    marginVertical: 12,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  settingTextContainer: {
+    flex: 1,
+    gap: 2,
+  },
+  settingDescription: {
+    fontSize: 12,
     opacity: 0.6,
   },
 });

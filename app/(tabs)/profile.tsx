@@ -20,10 +20,12 @@ import { loadGearItems } from '@/storage/gear-storage';
 import { loadRoutes } from '@/storage/route-storage';
 import { calculateGearStatus } from '@/utils/gear-status';
 import { calculateRouteDistance } from '@/utils/route-utils';
+import { useOnboarding } from '@/context/onboarding-context';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { showOnboarding } = useOnboarding();
   const syncProfile = getCachedProfileSync();
   const [userName, setUserName] = useState(syncProfile?.name ?? '');
   const [userEmail, setUserEmail] = useState(syncProfile?.email ?? '');
@@ -160,7 +162,7 @@ export default function ProfileScreen() {
           styles.container,
           {
             paddingTop: insets.top + 12,
-            paddingBottom: insets.bottom + 24,
+            paddingBottom: insets.bottom + 80,
           },
         ]}
         showsVerticalScrollIndicator={false}>
@@ -196,6 +198,10 @@ export default function ProfileScreen() {
           <Pressable style={styles.quickActionButton} onPress={() => router.push('/security')}>
             <ThemedText type="defaultSemiBold">Security</ThemedText>
             <ThemedText style={styles.quickActionHint}>Read safety guidance and limits</ThemedText>
+          </Pressable>
+          <Pressable style={styles.quickActionButton} onPress={() => showOnboarding()}>
+            <ThemedText type="defaultSemiBold">Replay Tutorial</ThemedText>
+            <ThemedText style={styles.quickActionHint}>Watch the intro guide again</ThemedText>
           </Pressable>
         </ThemedView>
 

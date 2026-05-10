@@ -16,26 +16,28 @@ import type { GearItem, GearStatus } from '@/types/gear';
 import { GEAR_CATEGORY_LABELS } from '@/types/gear';
 import { calculateGearStatus } from '@/utils/gear-status';
 import { formatDate } from '@/utils/route-utils';
+import { useAccessibility } from '@/context/accessibility-context';
 
-function getStatusStyle(status: GearStatus) {
+function getStatusStyle(status: GearStatus, colors: any) {
   switch (status) {
     case 'Safe':
-      return styles.statusSafe;
+      return { color: colors.safe, backgroundColor: colors.safeBg };
     case 'Warning':
-      return styles.statusWarning;
+      return { color: colors.warning, backgroundColor: colors.warningBg };
     case 'Retire Soon':
-      return styles.statusRetireSoon;
+      return { color: colors.retireSoon, backgroundColor: colors.retireSoonBg };
     case 'Expired':
-      return styles.statusExpired;
+      return { color: colors.expired, backgroundColor: colors.expiredBg };
     case 'Manually Retired':
-      return styles.statusManuallyRetired;
+      return { color: colors.manuallyRetired, backgroundColor: colors.manuallyRetiredBg };
     default:
-      return styles.statusSafe;
+      return { color: colors.safe, backgroundColor: colors.safeBg };
   }
 }
 
 export default function GearListScreen() {
   const router = useRouter();
+  const { colors } = useAccessibility();
   const backgroundColor = useThemeColor({}, 'background');
   const hasLoadedOnceRef = useRef(false);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
@@ -150,6 +152,7 @@ export default function GearListScreen() {
 
           {filteredItems.map((item) => {
             const result = calculateGearStatus(item);
+            const statusStyle = getStatusStyle(result.status, colors);
             const daysRemaining = Math.max(0, result.daysRemaining);
             const isManuallyRetired = result.status === 'Manually Retired';
 
@@ -179,9 +182,11 @@ export default function GearListScreen() {
                   ) : (
                     <ThemedText style={styles.metaText}>Days left: {daysRemaining}</ThemedText>
                   )}
-                  <ThemedText style={[styles.statusBadge, getStatusStyle(result.status)]}>
-                    {result.status}
-                  </ThemedText>
+                  <View style={[styles.statusBadge, { backgroundColor: statusStyle.backgroundColor }]}>
+                    <Text style={{ color: statusStyle.color, fontWeight: '600', fontSize: 12 }}>
+                      {result.status}
+                    </Text>
+                  </View>
                 </ThemedView>
               </Pressable>
             );
@@ -294,22 +299,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 12,
     textAlign: 'center',
-  },
-  statusSafe: {
-    color: '#1c7c41',
-    backgroundColor: '#e9f8ef',
-  },
-  statusWarning: {
-    color: '#8a5a00',
-    backgroundColor: '#fff4d9',
-  },
-  statusRetireSoon: {
-    color: '#a15a00',
-    backgroundColor: '#ffe9d4',
-  },
-  statusExpired: {
-    color: '#b42318',
-    backgroundColor: '#ffe2e0',
   },
   statusManuallyRetired: {
     color: '#475467',
