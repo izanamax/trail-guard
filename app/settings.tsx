@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, InteractionManager, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -27,6 +27,8 @@ const lightPalette = {
   destructiveBorder: '#cc5555',
   destructiveBg: '#fff1f0',
   destructiveText: '#b42318',
+  switchTrack: '#d0d5dd',
+  switchThumb: '#ffffff',
 };
 
 const darkPalette = {
@@ -44,6 +46,8 @@ const darkPalette = {
   destructiveBorder: '#996061',
   destructiveBg: '#402829',
   destructiveText: '#e6a9a2',
+  switchTrack: '#434a51',
+  switchThumb: '#E8E8E8',
 };
 
 export default function SettingsScreen() {
@@ -66,6 +70,8 @@ export default function SettingsScreen() {
   const [accountActionError, setAccountActionError] = useState('');
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [localColorblindMode, setLocalColorblindMode] = useState(isColorblindMode);
+  const pendingColorblindUpdateRef = useRef<ReturnType<typeof InteractionManager.runAfterInteractions> | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -112,6 +118,16 @@ export default function SettingsScreen() {
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setLocalColorblindMode(isColorblindMode);
+  }, [isColorblindMode]);
+
+  useEffect(() => {
+    return () => {
+      pendingColorblindUpdateRef.current?.cancel();
     };
   }, []);
 
@@ -252,6 +268,15 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleColorblindModeToggle = (enabled: boolean) => {
+    setLocalColorblindMode(enabled);
+    pendingColorblindUpdateRef.current?.cancel();
+    pendingColorblindUpdateRef.current = InteractionManager.runAfterInteractions(() => {
+      void setColorblindMode(enabled);
+      pendingColorblindUpdateRef.current = null;
+    });
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={['bottom']}>
       <ThemedView style={styles.container}>
@@ -308,20 +333,28 @@ export default function SettingsScreen() {
             <ThemedView style={styles.divider} />
 
             <ThemedText type="defaultSemiBold">Accessibility</ThemedText>
-            <ThemedView style={styles.settingRow}>
-              <ThemedView style={styles.settingTextContainer}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingTextContainer}>
                 <ThemedText>Colorblind Mode</ThemedText>
-                <ThemedText style={styles.settingDescription}>
-                  {isColorblindMode ? 'Status: ACTIVE (Purple Palette)' : 'Status: INACTIVE (Standard Palette)'}
+                <ThemedText
+                  style={[
+                    styles.settingDescription,
+                    { color: palette.helperText },
+                  ]}>
+                  Uses alternate status colors in Gear List and Gear Details for better color distinction.
                 </ThemedText>
-              </ThemedView>
+              </View>
               <Switch
-                value={isColorblindMode}
-                onValueChange={setColorblindMode}
-                trackColor={{ false: '#767577', true: '#cc5555' }}
-                thumbColor={isColorblindMode ? '#fff' : '#f4f3f4'}
+                value={localColorblindMode}
+                onValueChange={handleColorblindModeToggle}
+                {...(Platform.OS === 'ios'
+                  ? {}
+                  : {
+                      trackColor: { false: palette.switchTrack, true: palette.switchTrack },
+                      thumbColor: palette.switchThumb,
+                    })}
               />
-            </ThemedView>
+            </View>
 
             {error ? (
               <ThemedText style={[styles.errorText, { color: palette.errorText }]}>{error}</ThemedText>
@@ -471,7 +504,7 @@ const styles = StyleSheet.create({
   },
   settingDescription: {
     fontSize: 12,
-    opacity: 0.6,
+    lineHeight: 18,
   },
   signOutButton: {
     borderWidth: StyleSheet.hairlineWidth,

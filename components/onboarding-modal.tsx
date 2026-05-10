@@ -1,9 +1,8 @@
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import React, { useState } from 'react';
-import { Modal, StyleSheet, View, Pressable, Dimensions, ScrollView } from 'react-native';
-import { Image } from 'expo-image';
+import { Dimensions, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -24,7 +23,7 @@ const STEPS: OnboardingStep[] = [
   {
     title: 'Track Gear Life',
     description: 'Add your ropes, harnesses, and hardware. We\'ll help you track their age and usage limits based on manufacturer guidelines.',
-    icon: 'shield',
+    icon: 'shield-alt',
     color: '#1c7c41',
   },
   {
@@ -36,7 +35,7 @@ const STEPS: OnboardingStep[] = [
   {
     title: 'Stay Safe',
     description: 'Receive visual warnings when gear is nearing retirement or needs inspection. Never guess the age of your safety equipment again.',
-    icon: 'warning',
+    icon: 'exclamation-circle',
     color: '#f79009',
   },
 ];
@@ -75,7 +74,7 @@ export function OnboardingModal({ isVisible, onComplete }: Props) {
         <ThemedView style={styles.container}>
           <View style={styles.content}>
             <View style={[styles.iconContainer, { backgroundColor: step.color + '15' }]}>
-              <FontAwesome name={step.icon as any} size={64} color={step.color} />
+              <FontAwesome5 name={step.icon as any} size={64} color={step.color} />
             </View>
             
             <ThemedText type="title" style={styles.title}>
